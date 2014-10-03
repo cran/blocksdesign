@@ -1,3 +1,9 @@
+---
+title: "blocksdesign"
+author: "R. N. Edmondson"
+date: "02/10/2014"
+output: html_document
+---
 <!--
 %\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{An Introduction to the blocksdesign package}
@@ -5,7 +11,7 @@
 
 # Multi-stratum nested block designs
 R. N. Edmondson  
-18/09/2014  
+  
 
 ### Introduction 
 
@@ -72,7 +78,7 @@ The results show that the optimum block size was sometimes 8 and sometimes 4 wit
 In a multi-stratum nested blocks design, the choice of the smaller blocks is constrained by the fixed treatment allocation of the larger blocks therefore there could be some loss of efficiency on the smaller blocks due to the constraints of the larger blocks. Our experience is that for medium to large designs any loss of efficiency due to multi-stratum nesting is negligible. In the Patterson and Hunter example, the upper efficiency bound for blocks of size 4 is .69012 and the best achieved efficiency for blocks of size 4 in a 'classical' resolvable incomplete block design using the 'blocksdesign' package, was .68804 whereas the best achieved efficiency for hierarchically nested blocks of size 4 was .6867. Thus the loss of efficiency on blocks of size 4 in the multi-stratum nested design compared with blocks of size 4 in a 'conventional' single startum nested design was less than 0.2%. 
 
 As a further example, a design for two replicates of 256 treatments was optimized assuming a maximal multi-stratum nesting scheme based on recursive 2-level nesting down to the minimum possible block size. The following table shows the achieved efficiencies of each blocks stratum when fitted hierarchically and when fitted as a single nested stratum in a 'classical' nested block design in resolvable main blocks. The final column shows upper bounds for each block size in a completely unconstrained block design. 
- 				
+   			
   
 Block numbers  | Hierarchic model | Separate models | Upper bounds|
 ---------------| -----------------|-----------------|-------------|

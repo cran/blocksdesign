@@ -87,8 +87,7 @@
 #' 
 #' @export
 #' 
-blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4096/nunits)),seed=NULL) {
-  
+blocks = function(treatments, replicates, blocklevels=hcf, searches=min(64, floor(4096/nunits)), seed=NULL) { 
   if (missing(treatments) | missing(replicates) )  return(" Treatments or replicates not defined ")   
   if (is.null(treatments) | is.null(replicates))  return(" Treatments or replicates list is empty ") 	
   if (anyNA(treatments) | anyNA(replicates) ) return(" NA values not allowed")
@@ -149,23 +148,46 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
   for (i in 2 : strata) 
     if (all( tabulate(desMat[,i]) %% orthbsize == 0)) ortho=i else break
   v=sqrt(ntrts)		
-  lattice= (max(replevs)==min(replevs) & identical(v,ntrts%/%v))	
-  prime=TRUE
-  if (v <= 3) { 
-    prime=TRUE
-  } else if (v %% 2 == 0 | v %% 3 == 0) {
-    prime=FALSE
-  } else if (v<25) { 
-    prime=TRUE
-  } else {
-    for(i in  6*rep(1:floor((sqrt(v)+1)/6)) )
-      if( v %% (i-1) == 0 | v %% (i+1) == 0) prime=FALSE	
-  }						
+  lattice= (max(replevs)==min(replevs) & identical(v,ntrts%/%v))	  
+  
+  # primality test function
+  isPrime=function(v) {
+    if (v <= 3)  return(TRUE)
+    else if (v %% 2 == 0 | v %% 3 == 0) return(FALSE)
+    else if (v<25) return(TRUE)
+    else 
+      for(i in  6*rep(1:floor((sqrt(v)+1)/6)) )
+        if( v %% (i-1) == 0 | v %% (i+1) == 0) return(FALSE) 
+    return(TRUE)
+  }      
+    
+  #updates matrices
+  UpDate=function(M11,M22,M12,si,sj,Trts,BF) {
+    M11T = M11[Trts[si],]-M11[Trts[sj],]
+    M12T = M12[Trts[si],]-M12[Trts[sj],]
+    M12B = M12[,BF[si]]-M12[,BF[sj]]
+    M22B = M22[,BF[si]]-M22[,BF[sj]]
+    m11=M11T[Trts[si]]-M11T[Trts[sj]]
+    m22=M22B[BF[si]]-M22B[BF[sj]]
+    m12=1-(M12T[BF[si]]-M12T[BF[sj]])	
+    f = sqrt(m11+m22+2*m12)
+    m = f/sqrt(m12*m12-m11*m22)/2
+    Z1 = (M12B-M11T)/f 
+    Z2 = (M22B-M12T)/f 
+    W1 = (M11T+M12B - Z1*(m22-m11)/f)*m
+    W2 = (M12T+M22B - Z2*(m22-m11)/f)*m	
+    M11 = M11 - crossprod(t(Z1)) + crossprod(t(W1))
+    M22 = M22 - crossprod(t(Z2)) + crossprod(t(W2))
+    M12 = M12 - crossprod(t(Z1),t(Z2)) + crossprod(t(W1),t(W2))	
+    list(M11=M11,M22=M22,M12=M12)
+  }	
+    
   pp_trts=c(16,64,256,1024,4096,16384,81,729,6561,625,2401)	
   if (ortho<strata) {
     regreps=nunits/ntrts # replication for equireplicate design	
     for (i in (ortho+1) :strata) {	
-      if ( i==(ortho+1) & lattice  & cumblocklevs[i]==v*regreps &  ( regreps<=3   |  (regreps<=(v+1) & prime==TRUE) ) ) {
+      
+      if ( i==(ortho+1) & lattice  & cumblocklevs[i]==v*regreps &  ( regreps<=3   |  (regreps<=(v+1) & isPrime(v) ) ) ) {
         mols=c( rep(sample(0:(v-1)),v),rep(sample(v:(2*v-1)),each=v))
         square=vector(length=(v*v))
         if (regreps>2) {
@@ -183,7 +205,8 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
         }
         Trts=rep(sample(1:(v*v)),regreps)[order(mols)]
         rand=sample(1:(v*v*regreps))
-        Trts=Trts[rand][order(rep(1:(v*regreps),each=v)[rand])] # randomizes plots within sub-blocks			
+        Trts=as.factor(Trts[rand][order(rep(1:(v*regreps),each=v)[rand])]) # randomizes plots within sub-blocks	
+        
       } else if (i==(ortho+1) & lattice & cumblocklevs[i]==v*regreps & regreps<=(v+1) & ntrts%in%pp_trts ) {								
         prime=c(2,2,2,2,2,2,   3,3,3,  5,7)[which(pp_trts==ntrts)]
         ppower=c(2,3,4,5,6,7,   2,3,4,  2,2)[which(pp_trts==ntrts)]
@@ -192,7 +215,8 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
         for (i in 1: (regreps-2)) mols=c(mols,(as.numeric(fullmols[,,i]) + v*(i+1) -1))
         Trts=rep((1:(v*v)),regreps)[order(mols)]
         rand=sample(1:(v*v*regreps))
-        Trts[rand][order(rep(1:(v*regreps),each=v)[rand])] # randomizes plots within sub-blocks	
+        Trts=as.factor(Trts[rand][order(rep(1:(v*regreps),each=v)[rand])]) # randomizes plots within sub-blocks	
+        
       } else if (i==(ortho+1) & lattice & ntrts==100 & regreps<=4 & cumblocklevs[i]==regreps*v) {	
         mols=c( rep(sample(0:9),10),rep(sample(10:19),each=10))
         tens=c(
@@ -206,7 +230,8 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
         if (regreps==4) mols=c(mols,(tens[101:200] + 30))
         Trts=rep(sample(1:100),regreps)[order(mols)]
         rand=sample(1:(100*regreps))
-        Trts[rand][order(rep(1:(10*regreps),each=10)[rand])] # randomize plots in sub-blocks
+        Trts=as.factor(Trts[rand][order(rep(1:(10*regreps),each=10)[rand])]) # randomize plots in sub-blocks
+        # algorithmic
       } else {	
         MF=as.factor(desMat[,(i-1)])	
         BF=as.factor(desMat[,i])	
@@ -243,59 +268,47 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
           M22=M22[perm,perm]
           globrelD=1
           locrelD=1
-          globTF=Trts
-          Samp=vector("list", nlevels(MF))
-          detmat=vector("list", nlevels(MF))
-          relD=vector(length=nlevels(MF))
+          globTF=Trts         
           mainSets=split(rep(1:nunits),MF)
           for (r in 1 : searches) {					
             nSamp=ceiling(  min(nunits,36)*tabulate(MF)/nunits) # assuming initial sample size is smallest of 36 or nunits or with at least one sample per restriction block
-            repeat {					
-              for (i in 1:nlevels(MF)) Samp[[i]]=sort(sample(mainSets[[i]],nSamp[i])) #new sample	
+            repeat {
+              relD=0						
               for (i in 1:nlevels(MF)) {
-                TT=M11[Trts[Samp[[i]]],Trts[Samp[[i]]],drop=FALSE]
-                BB=M22[BF[Samp[[i]]],BF[Samp[[i]]],drop=FALSE]
-                TB=M12[Trts[Samp[[i]]],BF[Samp[[i]]],drop=FALSE]
+                Samp=sort(sample(mainSets[[i]],nSamp[i]))
+                TT=M11[Trts[Samp],Trts[Samp],drop=FALSE]
+                BB=M22[BF[Samp],BF[Samp],drop=FALSE]
+                TB=M12[Trts[Samp],BF[Samp],drop=FALSE]
                 TT=TT-crossprod(t(diag(TT)),t(rep(1,ncol(TT))))
                 TT=TT+t(TT)
                 BB=BB-crossprod(t(diag(BB)),t(rep(1,ncol(TT))))
                 BB=BB+t(BB)
                 TB=TB-crossprod(t(diag(TB)),t(rep(1,ncol(TT))))
                 TB=1+TB+t(TB)
-                detmat[[i]]=TB**2-TT*BB
-                relD[i]=max(detmat[[i]])
-              }												
-              maxi=which.max(relD)						
-              if (relD[maxi]>1.00001) {
-                N=which.max(detmat[[maxi]])
-                ti=1+(N-1)%%nrow(detmat[[maxi]])
-                tj=1+(N-1)%/%nrow(detmat[[maxi]])
-                si=Samp[[maxi]][ti]
-                sj=Samp[[maxi]][tj]		
-                #updates matrices
-                M11T = M11[Trts[si],]-M11[Trts[sj],]
-                M12T = M12[Trts[si],]-M12[Trts[sj],]
-                M12B = M12[,BF[si]]-M12[,BF[sj]]
-                M22B = M22[,BF[si]]-M22[,BF[sj]]
-                m11=M11T[Trts[si]]-M11T[Trts[sj]]
-                m22=M22B[BF[si]]-M22B[BF[sj]]
-                m12=1-(M12T[BF[si]]-M12T[BF[sj]])	
-                f = sqrt(m11+m22+2*m12)
-                m = f/sqrt(m12*m12-m11*m22)/2
-                Z1 = (M12B-M11T)/f 
-                Z2 = (M22B-M12T)/f 
-                W1 = (M11T+M12B - Z1*(m22-m11)/f)*m
-                W2 = (M12T+M22B - Z2*(m22-m11)/f)*m	
-                M11 = M11 - crossprod(t(Z1)) + crossprod(t(W1))
-                M22 = M22 - crossprod(t(Z2)) + crossprod(t(W2))
-                M12 = M12 - crossprod(t(Z1),t(Z2)) + crossprod(t(W1),t(W2))
+                detmat=TB**2-TT*BB
+                maxD=max(detmat)						
+                if (maxD>relD & maxD>1.00001) {
+                  N=which.max(detmat)
+                  ti=1+(N-1)%%nrow(detmat)
+                  tj=1+(N-1)%/%nrow(detmat)
+                  si=Samp[ti]
+                  sj=Samp[tj]	
+                  relD=maxD
+                }
+              }
+              if (relD>0) {
+                up=UpDate(M11,M22,M12,si,sj,Trts,BF)  
+                M11=up$M11
+                M22=up$M22
+                M12=up$M12
                 Trts[c(si,sj)]=Trts[c(sj,si)]								
-                locrelD=relD[maxi]*locrelD	
-              } else if (relD[maxi]<=1.00001 &  sum(nSamp) < min(nunits,512)) {
+                locrelD=relD*locrelD	
+              } else if ( sum(nSamp) < min(nunits,512)) {
                 nSamp=2*nSamp # doubles sample size
                 if (sum(nSamp)>nunits) nSamp=tabulate(MF) # ensures sample size not greater than the population
               } else break
-            } # repeat						
+            } # repeat	
+            
             if (locrelD>globrelD) {
               globrelD=locrelD
               globTF=Trts
@@ -317,23 +330,11 @@ blocks = function(treatments,replicates,blocklevels=hcf,searches=min(64, floor(4
                     (2*M11[Trts[s1],Trts[s2]]-M11[Trts[s1],Trts[s1]]-M11[Trts[s2],Trts[s2]])*(2*M22[BF[s1],BF[s2]]-M22[BF[s1],BF[s1]]-M22[BF[s2],BF[s2]])
                 }
                 #updates matrices
-                prop_change=prop_change*dswap		
-                M11T = M11[Trts[s1],]-M11[Trts[s2],]
-                M12T = M12[Trts[s1],]-M12[Trts[s2],]
-                M12B = M12[,BF[s1]]-M12[,BF[s2]]
-                M22B = M22[,BF[s1]]-M22[,BF[s2]]
-                m11=M11T[Trts[s1]]-M11T[Trts[s2]]
-                m22=M22B[BF[s1]]-M22B[BF[s2]]
-                m12=1-(M12T[BF[s1]]-M12T[BF[s2]])	
-                f = sqrt(m11+m22+2*m12)
-                m = f/sqrt(m12*m12-m11*m22)/2
-                Z1 = (M12B-M11T)/f 
-                Z2 = (M22B-M12T)/f 
-                W1 = (M11T+M12B - Z1*(m22-m11)/f)*m
-                W2 = (M12T+M22B - Z2*(m22-m11)/f)*m	
-                M11 = M11 - crossprod(t(Z1)) + crossprod(t(W1))
-                M22 = M22 - crossprod(t(Z2)) + crossprod(t(W2))
-                M12 = M12 - crossprod(t(Z1),t(Z2)) + crossprod(t(W1),t(W2))
+                prop_change=prop_change*dswap
+                up=UpDate(M11,M22,M12,s1,s2,Trts,BF)	
+                M11=up$M11
+                M22=up$M22
+                M12=up$M12
                 Trts[c(s1,s2)]=Trts[c(s2,s1)]	
               } 
               locrelD=locrelD*prop_change

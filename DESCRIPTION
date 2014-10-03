@@ -1,10 +1,11 @@
 Package: blocksdesign
 Type: Package
-Title: Nested block designs for unstructured treatments
-Version: 1.0
+Title: Nested Block Designs for Unstructured Treatments
+Version: 1.1
 Date: 2014-09-16
 Author: R. N. Edmondson
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
+Depends: R (>= 3.1.0)
 Description: Nested block designs for unstructured treatment sets where blocks
     can be repeatedly nested and treatments can have different levels of
     replication. Blocks strata are optimized hierarchically with each set of
@@ -19,7 +20,7 @@ URL: http://www.expdesigns.co.uk
 Suggests: knitr
 VignetteBuilder: knitr
 Imports: crossdes
-Packaged: 2014-09-28 18:51:17 UTC; rne
+Packaged: 2014-10-03 07:25:11 UTC; rne
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2014-09-29 07:23:52
+Date/Publication: 2014-10-03 10:00:22

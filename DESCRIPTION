@@ -1,7 +1,7 @@
 Package: blocksdesign
 Type: Package
 Title: Nested Block Designs for Unstructured Treatments
-Version: 1.1
+Version: 1.2
 Date: 2014-09-16
 Author: R. N. Edmondson
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
@@ -20,7 +20,7 @@ URL: http://www.expdesigns.co.uk
 Suggests: knitr
 VignetteBuilder: knitr
 Imports: crossdes
-Packaged: 2014-10-03 07:25:11 UTC; rne
+Packaged: 2014-11-02 10:17:33 UTC; rne
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2014-10-03 10:00:22
+Date/Publication: 2014-11-02 12:36:04

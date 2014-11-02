@@ -9,28 +9,29 @@
 #' @details
 #' 
 #' Block designs group experimental units into homogeneous blocks to provide maximum precision for treatment comparisons. 
-#' The most basic type of block design are complete randomised blocks where each block contains one or more complete sets of treatments. 
-#' Complete randomized blocks are excellent for small designs but for larger designs, the variability within blocks may become too large 
-#' for reliable treatment comparison and then it may be desirable to sub-divide the complete blocks into smaller incomplete blocks.
-#'
-#' Traditionally, nested block designs in large experiments have used a single stratum of nested blocks contained within a set of complete main blocks.
-#' The complexity of design and analysis of designs with more than a single stratum of nesting has made multi-stratum nesting infeasible for 
-#' practical experiments. However, modern software such as the \code{lme4} 
-#' mixed model  package (Bates et al 2014) and the availability of modern design algorithms have largely eliminated these restrictions
-#' and multi-stratum nesting for large block designs is now entirely feasible. 
+#' The most basic type of block design is the complete randomized blocks design where each block contains one or more complete
+#' sets of treatments. Complete randomized blocks must contain numbers of treatment plots proportional to 
+#' the treatment replication so the maximum possible number of complete randomized blocks is the highest common factor (hcf) of the replication numbers.
+#' 
+#' Complete randomized blocks can be excellent for small designs but for larger designs, the variability within blocks may become too large 
+#' for reliable treatment comparison and then it becomes desirable to sub-divide complete blocks into smaller incomplete blocks.
+#' The analysis of incomplete block designs is complex and requires combination of treatment information from different sources of variation
+#' and before the advent of modern computers the complexity of analysis restricted incomplete block designs to a single nested blocks stratum.  
+#' Nowadays, the availability of modern computers and modern software such as the \code{lme4} mixed model   
+#' package (Bates et al 2014) have largely eliminated these restrictions and multi-stratum nesting for large block designs is now entirely feasible. 
 #' 
 #' The advantage of multi-stratum nesting is that random variability can be captured across
 #' a range of block sizes and this allows for more realistic modelling of block effects compared with single stratum nesting. 
-#' The \code{blocksdesign} package is a general purpose tool that provides for the construction of general block designs where
-#' treatments can have any number of levels of replication and blocks can be nested to any feasible depth of nesting. 
-#' Where designs have one or more levels of nesting, blocks are optimized hierarchically with each successive set of nested blocks
-#' optimized within the blocks of the preceding set. 
+#' The \code{blocksdesign} package  provides for the construction of general block designs where
+#' treatments can have any number of levels of replication and blocks can be nested repeatedly to any feasible depth of nesting. 
+#' The design algorithm optimizes nested blocks hierarchically with each successive set of nested blocks
+#' optimized within the blocks of the preceding set. Block sizes within each stratum are as equal as possible and never differ by more than a single plot.
 #'
 #' The main function is \code{\link[blocksdesign]{blocks}} which is used to generate the actual required design. The output from 
 #' \code{blocks} includes a data frame of the block and treatment factors for each plot, 
 #' a data frame of the allocation of treatments to plots for each block in the design,
 #' blocks-by-treatments incidence matrices for each stratum in the design and an A-efficiency factor for each stratum in the design,
-#'  together with an efficiency upper bound, where available.
+#' together with an efficiency upper bound, where available.
 #'  
 #' The secondary function \code{\link[blocksdesign]{efficiencies}} takes the design output from the \code{blocks} 
 #' function and uses it to construct tables of efficiency factors for each pairwise treatment difference in each stratum, as required.
@@ -39,6 +40,8 @@
 #' A-efficiency upper bounds for regular block designs with equally replicated treatments and equal block sizes. 
 #'
 #' Further discussion of multi-stratum nesting can be found in the package vignette at: vignette("blocksdesign")
+#' 
+#' @seealso \url{http://www.expdesigns.co.uk}
 #' 
 #' @references
 #' 

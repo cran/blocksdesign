@@ -20,7 +20,7 @@
 #' @export
 efficiencies=function(Design){
   nunits=nrow(Design)	
-  strata=ncol(Design)-1
+  strata=ncol(Design)-2
   pairwise_effics=vector(mode="list",length=strata)	
   TF=as.factor(Design$Treatments)
   T=matrix(0,nrow=nunits,ncol=nlevels(TF))	

@@ -3,56 +3,74 @@
 \alias{blocks}
 \title{Block designs}
 \usage{
-blocks(treatments, replicates, blocklevels = hcf, searches = min(64,
-  floor(4096/nunits)), seed = NULL)
+blocks(treatments, replicates, blocklevels = NULL, searches = NULL,
+  seed = NULL)
 }
 \arguments{
-\item{treatments}{a list of numbers for the number of treatments in each treatment replication set of the design. Each treatment number must have a matching
-replication number in the \code{replicates} list.}
+\item{treatments}{a list giving a partition of the total number of treatments into equally replicated treatment sets.}
 
-\item{replicates}{a list of numbers for the number of replicates in each treatment replication set in the design. Each replication number must
-have a matching treatment number in the \code{treatments} list.}
+\item{replicates}{a list assigning a replication level to each set in the \code{treatments} list.}
 
-\item{blocklevels}{an optional list of nested blocks where the first number is the number of main blocks and where the  remaining numbers, if any,
-are the numbers of blocks nested in each preceding block. The default is the hcf of the replication numbers which gives a maximum set of complete orthogonal main blocks.}
+\item{blocklevels}{an optional list of levels where the first level is the number of main blocks and the remaining
+levels, if any, are the levels of a hierarchy of nested sub-blocks in descending order of nesting.
+The default is an orthogonal main blocks design.}
 
-\item{searches}{an optional number for the number of local optima searched during optimization. The default is the minimum of 64 or the integer quotient of 4096
-divided by the number of plots.}
+\item{searches}{an optional integer for the number of local optima searched during an optimization.
+The default is the minimum of 32 or the ceiling of 4096 divided by the number of units.}
 
-\item{seed}{an integer seed for initializing the random number generator where a design must be reproducible. The default is a random seed.}
+\item{seed}{an optional integer seed for initializing the random number generator. The default
+is a random seed.}
 }
 \value{
-\item{Design}{Data frame showing the block and treatment factors for each sub-plot}
-\item{Plan}{Data frame showing the allocation of treatments to sub-plots for each block in the design}
-\item{Incidences}{List of blocks-by-treatments incidence matrices, one for each stratum in the design}
-\item{Efficiencies}{Data frame showing the A-efficiency factor for each stratum in the design together with an upper bound, where available}
+\item{Design}{Data frame showing the listing of treatments allocated to blocks}
+\item{Plan}{Data frame showing a plan of treatments allocated to sub-plots within blocks}
+\item{Incidences}{List of blocks-by-treatments incidence matrices, one for each stratum of the design}
+\item{Efficiencies}{Data frame showing the A-efficiency factor for each stratum of the design together with an upper bound, where available}
 \item{seed}{Numerical seed for random number generator}
 }
 \description{
-Constructs nested block designs for unstructured treatments with arbitrary replication, not necessarily all equal, and arbitrary depth of nesting.
+Constructs nested block designs for unstructured treatment sets with arbitrary replication,
+not necessarily all equal, and arbitrary depth of nesting.
 }
 \details{
-The \code{blocks} function constructs optimized nested block designs for unstructured treatment sets where treatments can have any arbitrary replication, not necessarily all equal,
-and blocks can have any feasible depth of nesting.
+\code{blocks(...)} constructs general block designs by using a swapping algorithm to
+maximize the determinant of
+the information matrix (D-optimality). The algorithm proceeds by making improving swaps between blocks
+ in the top stratum
+of a design until no further improvement is possible and then repeating
+the process for each nested stratum in turn until the bottom stratum is reached.
+At each stage, improving swaps are made within the blocks of any existing strata
+to ensure top-down optimization. Certain special lattice block designs with v**2 equally
+replicated treatments in blocks of size v and with k replicates
+ where k <= 3 for any v, or k <= v+1 for prime or prime-power v, or k <= 4 for v = 10 have algebraic optima and
+ these designs are constructed algebraically.
 
-The treatments are defined by the \code{treatments} and \code{replicates} parameter lists where the \code{treatments} list partitions the
-total number of treatments into sub-sets of equally replicated treatments and the \code{replicates} list provides the replication for each set. The two lists are of equal length and
-the treatment numbers and replication numbers are paired according to their index position in the two lists. Any feasible number of replication levels can be defined and the resulting treatments are
-labelled consecutively according to the ordering of the the treatment sets in the two lists.
+The treatments design is defined by the \code{treatments} and the \code{replicates} parameter lists which
+partition the total required number of treatments into
+sets of equally replicated treatments. The \code{treatments} list defines the size of each set
+and the \code{replicates} list defines the replication. The two lists must be of equal length and the sets
+must be in the same order in both lists. Treatments are numbered consecutively according to the set order
+and treatments with the same replication can be split between two or more sets if a non-standard treatment order
+is required.
 
-The \code{blocklevels} list defines the blocks structure of the design where the first number in the list is the number of main blocks
-and the succesive numbers, if any, are the numbers of succesively nested blocks. The numbers are the nested blocks in each preceding block therefore the cumulative product of the numbers
-is the total number of blocks in the design. The default value for the \code{blocklevels} list is a single number equal to the highest common factor (hcf) of
-the replication numbers, which gives an orthogonal complete blocks design with the maximum possible number of othogonal blocks.
+The blocks design is defined by the \code{blocklevels} list which contains the nested blocks levels
+for each stratum of the design. The first level is the number of main blocks
+and the successive levels, if any, are the numbers of nested sub-blocks in each stratum of
+ a hierarchy of nested sub-blocks.
+The length of the list is the number of strata in the design and the
+running products of the levels are the total blocks in each successive strata of the
+design. The blocks in any given stratum are always equal in size or differ by, at most, a
+single unit. The default is the highest common factor of the replication levels,
+which gives a main blocks design with a maximal set of complete orthogonal main blocks.
 
-Block sizes in any given stratum are equal if the cumulative number of blocks in that stratum exactly divides the total number of plots, otherwise they differ by not more than a single unit.
+The \code{searches} parameter is the number of local optima searched during an optimization.
+Increasing the number of searches may improve the efficiency of a design but
+ will also increase the search time.
 
-Designs with t = v**2 equally replicated treatments, k = v+1 or fewer replicates and blocks of size v where v is a prime or prime-power if k>3 or is arbitrary otherwise,
-are regular lattice designs and can be constructed algebraically. \code{blocks} constructs all regular lattice designs algebraically and also constructs the special
-non-prime lattice with t = 100, v = 10 and k< = 4 algebraically. Prime-power lattice designs require the \code{MOLS} function of the \code{crossdes} package.
-All other designs are constructed algorithmically by a swapping algorithm that maximizes the determinant of the information matrix (D-optimality).
+The \code{seed} parameter is an integer used to initialize the random number generator. The
+ default is a random integer but any fixed positive integer can be used instead,if required.
 
-Designs are fully randomized with each set of nested blocks randomized within the preceding set of blocks and with treatments fully randomized within the bottom set of blocks.
+Blocks and treatments are fully randomized within the constraints of a nested blocks design.
 }
 \examples{
 # 3 treatments with 2 reps, 2 treatments with 4 reps, 4 treatments with 3 reps

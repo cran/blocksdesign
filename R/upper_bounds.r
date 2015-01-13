@@ -26,8 +26,9 @@
 #'
 #' @export
 #'  
-upper_bounds=function(nplots,ntrts,nblocks){
-  if (nplots%%ntrts != 0 | nplots%%nblocks != 0 | ntrts == 1 | nblocks == 1 | (ntrts+nblocks-1)>nplots ) return(NA) 
+upper_bounds=function(nplots,ntrts,nblocks) {
+  
+  if (nplots%%ntrts != 0 | nplots%%nblocks != 0 | ntrts == 1 | (ntrts+nblocks-1)>nplots ) return(NA) 
   if (nplots%%(nblocks*ntrts) == 0 ) return(1)  
   nreps = nplots/ntrts #replication
   bsize = nplots/nblocks #block size	
@@ -75,5 +76,5 @@ upper_bounds=function(nplots,ntrts,nblocks){
     ntrts = temp
     bound = (ntrts - 1)/((ntrts - nblocks) + (nblocks - 1)/bound)
   }			
-  round(bound,5)
+  bound
 }	

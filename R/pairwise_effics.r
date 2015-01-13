@@ -31,10 +31,10 @@ efficiencies=function(Design){
     B=matrix(0,nrow=nunits,ncol=nlevels(BF))
     B[cbind(rep(1:nunits),BF)]=1
     B=B[ , (1:(ncol(B)-1)),drop=FALSE ]
-    B=crossprod(t(B),diag(1/sqrt(apply(B, 2, sum)),nrow=ncol(B)))
+    B=tcrossprod(B,diag(1/sqrt(apply(B, 2, sum)),nrow=ncol(B)))
     V=solve(diag(r,nrow = length(r))-crossprod(crossprod(B,T)))
-    D= crossprod( t(rep(1,nlevels(TF)))  ,t(diag(V)))   +  crossprod( t(diag(V)), t(rep(1,nlevels(TF))) ) - 2*V		
-    N= crossprod( t(rep(1,nlevels(TF)))  ,1/t(r))       +  crossprod( 1/t(r), t(rep(1,nlevels(TF))))
+    D= tcrossprod( rep(1,nlevels(TF)) ,diag(V)) +  tcrossprod( diag(V), rep(1,nlevels(TF))) - 2*V		
+    N= tcrossprod( rep(1,nlevels(TF)) , 1/r)    +  tcrossprod( 1/r, rep(1,nlevels(TF)))
     E=N/D
     E[upper.tri(E,diag=TRUE)] = NA
     pairwise_effics[[i]]=E

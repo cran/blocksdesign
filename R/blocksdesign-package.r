@@ -13,17 +13,17 @@
 #' sets of treatments. Complete randomized blocks must contain numbers of treatment plots proportional to 
 #' the treatment replication so the maximum possible number of complete randomized blocks is the highest common factor (hcf) of the replication numbers.
 #' 
-#' Complete randomized blocks can be excellent for small designs but for larger designs, the variability within blocks may become too large 
-#' for reliable treatment comparison and then it becomes desirable to sub-divide complete blocks into smaller incomplete blocks.
+#' Complete randomized blocks are excellent for small designs but for larger designs, the variability within blocks may become large 
+#' and then it may become desirable to sub-divide complete blocks into smaller incomplete blocks to give better control of variability.
 #' The analysis of incomplete block designs is complex and requires combination of treatment information from different sources of variation
-#' and before the advent of modern computers the complexity of analysis restricted incomplete block designs to a single nested blocks stratum.  
-#' Nowadays, the availability of modern computers and modern software such as the \code{lme4} mixed model   
-#' package (Bates et al 2014) have largely eliminated these restrictions and multi-stratum nesting for large block designs is now entirely feasible. 
+#' and before the advent of modern computers the complexity of such  an analysis restricted incomplete block designs to a single nested blocks stratum.  
+#' Nowadays, however, the availability of modern computers and modern software such as the \code{lme4} mixed model   
+#' package (Bates et al 2014) have largely eliminated such restrictions and the routine analysis of multi-stratum nested block designs is now entirely feasible. 
 #' 
-#' The advantage of multi-stratum nesting is that random variability can be captured across
+#' The advantage of multi-stratum nesting is that random variability can be captured for
 #' a range of block sizes and this allows for more realistic modelling of block effects compared with single stratum nesting. 
 #' The \code{blocksdesign} package  provides for the construction of general block designs where
-#' treatments can have any number of levels of replication and blocks can be nested repeatedly to any feasible depth of nesting. 
+#' treatments can have any feasible number of levels of replication and blocks can be nested repeatedly to any feasible depth of nesting. 
 #' The design algorithm optimizes nested blocks hierarchically with each successive set of nested blocks
 #' optimized within the blocks of the preceding set. Block sizes within each stratum are as equal as possible and never differ by more than a single plot.
 #'

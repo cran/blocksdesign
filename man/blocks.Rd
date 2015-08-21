@@ -37,24 +37,24 @@ Constructs randomized nested block designs for unstructured treatments where tre
 and blocks can have arbitrary depth of nesting.
 }
 \details{
-The \code{treatments} and \code{replicates} lists define a partition of the total required number of treatments into equally replicated treatment sets where
-\code{treatments} is a list of set sizes and \code{replicates} is a matching list of replication numbers.
- The sum of the set sizes is the total number of treatments and the sum of the cross-products of the set sizes
- and the replication numbers is the total number of units. Treatments are numbered consecutively according to
- the numbers of treatments in the consecutive treatment sets.
+The \code{treatments} and \code{replicates} parameters partition the treatments design into sets of equally replicated treatments where
+\code{treatments} contains the set sizes and \code{replicates} contains the set replication numbers.
+ The sum of the set sizes is the total number of treatments and the sum of the cross-products of the set sizes and the replication numbers
+ is the total number of plots. Treatments are numbered consecutively according to the treatments in the consecutive treatment sets.
 
-The \code{blocklevels} list defines the number of nested blocks in each blocks stratum taken in order from the highest to the lowest stratum. The
+The \code{blocklevels} parameter contains the numbers of nested blocks in the individual strata taken in order from highest to lowest. The
 first number is the number of main blocks, the second number, if any, is the number of sub-blocks nested in each main block, the third
-number, if any, is the number of sub-sub-blocks nested in each sub-block,and so on for all the reqired blocks strata.
-The default is the highest common factor of the replication numbers and defines a design with the maximum possible number of
-orthogonal main blocks. Block sizes are always as equal as possible and never differ by more than a single unit in any particular stratum of the design.
+number, if any, is the number of sub-sub-blocks nested in each sub-block,and so on for all the reqired strata.
+The default number of blocks is the maximum possible number of orthogonal main blocks (the highest common factor of the replication numbers).
+Block sizes are always as equal as possible and never differ by more than a single unit in any particular stratum of the design.
 
  Block designs for k replicates of v**2 treatments with k complete main blocks of size v**2 and v incomplete blocks of size v in each main block
  where k < (v+2) if v is prime or prime-power, k < 5 if v = 10, or k < 4 generally, are lattice block designs and are constructed algebraically.
  All other non-orthogonal block designs are constructed by a D-optimality swapping algorithm that makes improving swaps between
- blocks until a local optima is atttained and no further improvement is possible. The swapping algorithm always works from the top stratum downwards and
- is always constrained to make improving swaps within the levels of any existing blocks.
-
+ blocks until a local optima is atttained. The swapping algorithm works from the top stratum downwards and
+ is always constrained to make improving swaps within the levels of any existing blocks. The whole process will be repeated according to the
+ number of searches defined by the search parameter and the design returned will be the design with the best overall stratum efficiencies in top-down
+ order.
  Lattice designs where v is a prime-power require the \code{\link[crossdes]{MOLS}} package.
 
  The principle design outputs comprise:
@@ -65,6 +65,10 @@ orthogonal main blocks. Block sizes are always as equal as possible and never di
  \item  A table showing the achieved D- and A-efficiency factors for each nested blocks stratum together with an A-efficiency upper bound, where available. \cr
  \item  A table showing a skeleton analysis of degrees of freedom for the combined block and treatment design. \cr
 }
+
+Very occasionally, the algorithm may fail to converge due to a near-singular design with a large number of single plot blocks.
+In that case, it may be best to build a simpler design with larger blocks and then to add the extra block constraints by hand using ad hoc or heuristic
+methods.
 }
 \examples{
 # 3 treatments x 2 replicates, 2 treatments x 4 replicates and 4 treatments x 3 replicates

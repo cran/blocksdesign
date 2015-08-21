@@ -26,12 +26,12 @@
 #'
 #' @export
 #'  
+#'  
 upper_bounds=function(nplots,ntrts,nblocks) {
-  
   if (nplots%%ntrts != 0 | nplots%%nblocks != 0 | (ntrts+nblocks-1)>nplots ) return(NA) 
   if (nplots%%(nblocks*ntrts) == 0 ) return(1)  
-  nreps = nplots/ntrts #replication
-  bsize = nplots/nblocks #block size	
+  nreps = nplots%/%ntrts #replication
+  bsize = nplots%/%nblocks #block size	
   # this bound is for non-binary designs where bsize>ntrts and can be improved - see John and Williams page 44
   if (bsize > ntrts) return(round( 1 - (bsize%%ntrts)*(ntrts - bsize%%ntrts)/(bsize*bsize*(ntrts - 1)) , 5))			
   # binary designs with bsize<=ntrts
@@ -41,8 +41,8 @@ upper_bounds=function(nplots,ntrts,nblocks) {
     temp = nblocks
     nblocks = ntrts
     ntrts = temp
-    nreps = nplots/ntrts
-    bsize = nplots/nblocks
+    nreps = nplots%/%ntrts
+    bsize = nplots%/%nblocks
   }	
   ebar =  ntrts*(bsize - 1)/(bsize*(ntrts - 1))
   lambda = nreps*(bsize - 1)/(ntrts - 1)

@@ -3,3 +3,5 @@
 export(blocks)
 export(efficiencies)
 export(upper_bounds)
+importFrom(stats,anova)
+importFrom(stats,lm)

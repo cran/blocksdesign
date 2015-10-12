@@ -1,13 +1,13 @@
-46cf529fd4d161918f954b052c155b9f *DESCRIPTION
+528ce274655d859e63a0882acca19779 *DESCRIPTION
 e81d45a3610286c60ed8e7481134b03c *NAMESPACE
-7373b48646c2f327d3333c075ab3fd02 *R/blocks.r
+643bbafe242544076b430702e93ff55f *R/blocks.r
 ff8d12801b730c812778b65411f12bd8 *R/blocksdesign-package.r
 18c3b9afdcb4380c54d46d2938773929 *R/pairwise_effics.r
-55a009e6d6bcbfcf4a166d2a4e974914 *R/upper_bounds.r
+d748748b6353a0313fbdc94032dada81 *R/upper_bounds.r
 24881824ff8bfdadd26f821751f6872d *build/vignette.rds
 8fe01bc93c5ce836c93b23f7b8e3953f *inst/doc/blocksdesign.Rmd
 82651de6ab684eef792f70d8daad881d *inst/doc/blocksdesign.html
-41eafa6ae138f30a52edb87a8782502d *man/blocks.Rd
+a08ab0b74cd0f434df7a517b21327b30 *man/blocks.Rd
 3a6331c91dbad23bf77a79077caf3f64 *man/blocksdesign-package.Rd
 93f4a137e111d2daa6010054a3c5f4d1 *man/efficiencies.Rd
 d78ded64f5a863ec48b41a9e8e86cb95 *man/upper_bounds.Rd

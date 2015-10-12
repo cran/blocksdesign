@@ -9,9 +9,9 @@ blocks(treatments, replicates, blocklevels = HCF(replicates),
   seed = sample(10000, 1), jumps = 1)
 }
 \arguments{
-\item{treatments}{numbers that provide a partition of the total required number of treatments into sets of equally replicated treatments.}
+\item{treatments}{treatment numbers that provide a partition of the total required number of treatments into sets of equally replicated treatments.}
 
-\item{replicates}{replication numbers for each equally replicated treatments set defined by the \code{treatments} list.}
+\item{replicates}{replication numbers that provide the replictaion for each set of equally replicated treatments defined by the \code{treatments} list.}
 
 \item{blocklevels}{factor levels that define the number of nested blocks in each succesive blocks stratum taken in order from the highest to the lowest.
 The default is the hcf of the replication numbers.}
@@ -33,28 +33,32 @@ The default is the hcf of the replication numbers.}
 \item{jumps}{Number of random treatment swaps to escape a local maxima}
 }
 \description{
-Constructs randomized nested block designs for unstructured treatments where treatments can have arbitrary levels of replication
-and blocks can have arbitrary depth of nesting.
+Constructs randomized nested block designs for unstructured treatment sets where treatments can have any arbitrary levels of replication
+and blocks can have any arbitrary feasible depth of nesting.
 }
 \details{
 The \code{treatments} and \code{replicates} parameters partition the treatments design into sets of equally replicated treatments where
 \code{treatments} contains the set sizes and \code{replicates} contains the set replication numbers.
- The sum of the set sizes is the total number of treatments and the sum of the cross-products of the set sizes and the replication numbers
- is the total number of plots. Treatments are numbered consecutively according to the treatments in the consecutive treatment sets.
+The sum of the set sizes is the total number of treatments and the sum of the cross-products of the set sizes and the replication numbers
+is the total number of plots. Treatments are numbered consecutively according to the treatments in the consecutive treatment sets.
 
-The \code{blocklevels} parameter contains the numbers of nested blocks in the individual strata taken in order from highest to lowest. The
-first number is the number of main blocks, the second number, if any, is the number of sub-blocks nested in each main block, the third
-number, if any, is the number of sub-sub-blocks nested in each sub-block,and so on for all the reqired strata.
-The default number of blocks is the maximum possible number of orthogonal main blocks (the highest common factor of the replication numbers).
-Block sizes are always as equal as possible and never differ by more than a single unit in any particular stratum of the design.
+The \code{blocklevels} parameter contains the numbers of nested blocks in the individual strata taken in order from the highest to the lowest stratum.
+The first block number is the number of main blocks, the second, if any, is the number of sub-blocks nested in each main block, the third, if any,
+is the number of sub-sub-blocks nested in each sub-block,and so on for all the reqired strata. If left blank, the default block design is a
+ maximal set of orthogonal main blocks, where the maximal number of of orthogonal main blocks is the highest common factor of the replication numbers.
 
- Block designs for k replicates of v**2 treatments with k complete main blocks of size v**2 and v incomplete blocks of size v in each main block
- where k < (v+2) if v is prime or prime-power, k < 5 if v = 10, or k < 4 generally, are lattice block designs and are constructed algebraically.
+Whatever the block and treatment design, the block sizes in each stratum are always as equal as possible and never differ by more than a single unit
+in any particular stratum. If the number of nested blocks in any particular stratum exactly divdes the number of units, the block sizes in that
+stratum will be exactly equal; otherwise the blocks will differ by a single unit only.
+
+ Special square and rectangular lattice designs are constructed algebraically and include all designs that can be constructed from
+ any single latin square, from any complete sets of prime or prime-power orthogonal latin squares or from a pair of orthogonal 10 x 10 Latin squares.
  All other non-orthogonal block designs are constructed by a D-optimality swapping algorithm that makes improving swaps between
  blocks until a local optima is atttained. The swapping algorithm works from the top stratum downwards and
  is always constrained to make improving swaps within the levels of any existing blocks. The whole process will be repeated according to the
  number of searches defined by the search parameter and the design returned will be the design with the best overall stratum efficiencies in top-down
  order.
+
  Lattice designs where v is a prime-power require the \code{\link[crossdes]{MOLS}} package.
 
  The principle design outputs comprise:
@@ -67,8 +71,7 @@ Block sizes are always as equal as possible and never differ by more than a sing
 }
 
 Very occasionally, the algorithm may fail to converge due to a near-singular design with a large number of single plot blocks.
-In that case, it may be best to build a simpler design with larger blocks and then to add the extra block constraints by hand using ad hoc or heuristic
-methods.
+In that case, it may be best to build a simpler design with larger blocks and then to add the extra block constraints by hand using ad hoc or heuristic methods.
 }
 \examples{
 # 3 treatments x 2 replicates, 2 treatments x 4 replicates and 4 treatments x 3 replicates

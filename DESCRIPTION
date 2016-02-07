@@ -1,27 +1,26 @@
 Package: blocksdesign
 Type: Package
 Title: Nested Block Designs for Unstructured Treatments
-Version: 1.9
-Date: 2015-11-22
+Version: 2.0
+Date: 2016-02-07
 Author: R. N. Edmondson
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
-Description: Nested block designs for unstructured treatment sets where
-    blocks can be repeatedly nested and treatments can have different levels of
-    replication. Blocks are optimized hierarchically from the top down with each
-    set of nested blocks optimized within the levels of any existing higher-level
-    blocks. Block sizes are equal if the number of blocks exactly divides the number
-    of plots, otherwise they differ by at most one plot. The design output is a
-    data table giving a randomised allocation of treatments to blocks together with
-    a plan table showing treatments in blocks and a set of blocks-by-treatments
-    incidence matrices, one for each blocks stratum.
+Description: Constructs nested and crossed block designs 
+  for unstructured treatment sets with arbitrary replication not necessarily all equal.
+  Blocks can be nested to any required depth of nesting and blocks are optimized 
+  hierarchically from the top down with successive nested blocks strata optimized within
+  the levels of all preceding blocks strata. Block sizes are all equal in any one stratum if the number 
+  of blocks in that stratum exactly divides the number of plots, otherwise they differ by at most one plot. 
+  The design output is a data table showing a randomised allocation of treatments to blocks together with
+  plans showing the allocation of treatments to blocks for each block in the bottom stratum of the design. 
+  D and A-efficiency factors are shown for each stratum together with A-efficiency upper bounds,
+  where available.
 License: GPL (>= 2)
 URL: http://www.expdesigns.co.uk
-Suggests: knitr
-VignetteBuilder: knitr
 Imports: crossdes
 RoxygenNote: 5.0.1
 NeedsCompilation: no
-Packaged: 2015-11-22 21:54:10 UTC; rne
+Packaged: 2016-02-07 12:19:45 UTC; rne
 Repository: CRAN
-Date/Publication: 2015-11-23 12:20:32
+Date/Publication: 2016-02-07 15:55:09

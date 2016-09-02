@@ -1,8 +1,8 @@
 Package: blocksdesign
 Type: Package
-Title: Nested Block Designs for Unstructured Treatments
-Version: 2.1
-Date: 2016-03-26
+Title: Nested and Crossed Block Designs for Unstructured Treatment Sets
+Version: 2.2
+Date: 2016-09-01
 Author: R. N. Edmondson
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
@@ -21,6 +21,6 @@ URL: http://www.expdesigns.co.uk
 Imports: crossdes
 RoxygenNote: 5.0.1
 NeedsCompilation: no
-Packaged: 2016-03-27 18:26:46 UTC; rne
+Packaged: 2016-09-01 20:23:34 UTC; rne
 Repository: CRAN
-Date/Publication: 2016-03-27 20:43:54
+Date/Publication: 2016-09-02 02:03:31

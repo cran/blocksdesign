@@ -6,7 +6,7 @@
 \usage{
 blocks(treatments, replicates, rows = HCF(replicates), columns = NULL,
   searches = (1 + 10000\%/\%sum(treatments * replicates)),
-  seed = sample(10000, 1), jumps = 1)
+  seed = sample(10000, 1), jumps = 1, weighted = TRUE)
 }
 \arguments{
 \item{treatments}{a vector giving a partition of the total required number of treatments into sets of equally replicated treatments.}
@@ -24,6 +24,10 @@ The \code{rows} and the \code{columns} vectors, if both present, must be of equa
 \item{seed}{an integer initializing the random number generator. The default is a random seed.}
 
 \item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.}
+
+\item{weighted}{an option for row-and-column designs with two or more plot in the row.column blocks. \code{weighted}=TRUE
+improves the row.columns blocks efficiency but may decrease the columns blocks efficiency. \code{weighted}=FALSE gives the best column
+blocks efficiency but may give poor row.columns blocks efficiency. The default is weighted=TRUE.}
 }
 \value{
 \item{Design}{Data frame giving the optimized block and treatment factors in plot order}
@@ -71,8 +75,11 @@ that never differ in size by more than a single plot. General crossed block desi
 the algorithm will only accommodate single unreplicated treatments in a crossed block design if the block sizes of the replicated part 
 of the design are all equal in each stratum of the design.
 
- Complete row-and-column block designs with more treatments than replicates must contain multiple plots in at least some of the row-by-column intersections and
- sometimes it may be useful to nest block designs in the individual row-by-column intersections.
+ For row-and-column designs, the algorithm will unconditionally optimize the rows stratum and will then optimise the columns stratum conditional on the row blocks remaining 
+ unchanged. Row-and-column designs contain nested blocks in the row-by-column intersections and these blocks may contain two or more plots. If the row-by-column intersection 
+ blocks contain useful treatment information and the \code{weighted} option is TRUE (default) the algorithm will optimize the column design conditional on improving swaps 
+ between columns also being improving swaps between blocks. If the \code{weighted} option is FALSE the column blocks are optimized ignoring blocks.           
+ 
  For 2 x 2 row-and-column designs with complete replicate rows and complete replicate columns, however, one treatment contrast will always be confounded
   with the row-by-column interaction and for these designs, it is impossible to nest blocks in the row-by-column intersections. 
  Instead, we recommend a simple nested blocks design with two complete or four incomplete main blocks. 
@@ -99,8 +106,7 @@ blocks(treatments=4,replicates=4,rows=2)
 # 50 treatments x 4 replicates with 4 main rows and 5 nested sub-rows in each main block 
 blocks(treatments=50,replicates=4,rows=c(4,5))
 
-# as above but with 20 additional single replicate treatments 
-# giving exactly one single replicate treatment per sub-block
+# as above but with 20 single replicate treatments giving one extra treatment per sub-block
 blocks(treatments=c(50,20),replicates=c(4,1),rows=c(4,5))
 
 # 64 treatments x 2 replicates with 2 main rows and four succesively nested 2-level factors
@@ -118,9 +124,17 @@ blocks(treatments=13,replicates=4,rows=13,columns=4)
 # 64 treatments x 2 replicates with nested 8 x 8 row-and-column designs in two main blocks 
 blocks(treatments=64,replicates=2,rows=c(2,8),columns=c(1,8)) 
 
+# 64 treatments x 2 replicates with two main blocks and a 4 x 4 row-and-column design  
+# nested in each main block and weighted = TRUE by default.
+blocks(treatments=64,replicates=2,rows=c(2,4),columns=c(1,4),searches=12) 
+
+# 64 treatments x 2 replicates with two main blocks and a 4 x 4 row-and-column design  
+# nested in each main block. weighted = FALSE
+blocks(treatments=64,replicates=2,rows=c(2,4),columns=c(1,4),weighted=FALSE,searches=12)
+
 # 2**9 treatments x 2 replicates in 2**9 blocks giving a fully saturated block design 
 # (requires a considerable time to run!)
-\dontrun{ d=blocks(2**9,2,rep(2,9)) }
+\dontrun{ d=blocks(2**9,2,rep(2,9),searches=1) }
          
 }
 \references{

@@ -1,10 +1,10 @@
-7465d7c6c4f801dcb13117572f48acec *DESCRIPTION
+db8853e2bf214dee1c7d2db8fd92f65b *DESCRIPTION
 7b30354d449df9ce597f2ad340a4809e *NAMESPACE
-8dc14cca8c81eca84477bd86667903ac *R/blocks.r
+49d467dfa48cc32b1f4bcb7544506c37 *R/blocks.r
 d9afdc5c318d31fdcb6e93e4315152df *R/blocksdesign-package.r
 cc0e2efd896ead3a098450f4e7c6d662 *R/upper_bounds.r
 68b329da9893e34099c7d8ad5cb9c940 *inst/doc/blocksdesign.R
 21978fc89ac2955e8f73555224a7a078 *inst/doc/blocksdesign.html
-0f09f638f73f1665d3e7879b130414bf *man/blocks.Rd
+187eb5d9de07697b7b00df5c17d7dc90 *man/blocks.Rd
 72e329b8234a0dc94190efb45f19cfec *man/blocksdesign-package.Rd
 bb447410432e857d3b3ac0feea65b79d *man/upper_bounds.Rd

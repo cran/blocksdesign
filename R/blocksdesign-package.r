@@ -43,7 +43,6 @@
 #'
 #' Further discussion of designs with repeatedly nested strata can be found in the package vignette at: vignette("blocksdesign")
 #' 
-#' @seealso \url{http://www.expdesigns.co.uk}
 #' 
 #' @references
 #' 

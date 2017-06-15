@@ -1,9 +1,9 @@
 Package: blocksdesign
 Type: Package
-Title: Nested and Crossed Block Designs for Unstructured and Factorial
-        Treatment Sets
-Version: 2.4
-Date: 2017-01-08
+Title: Nested and Crossed Block Designs for Factorial, Fractional
+        Factorial and Unstructured Treatment Sets
+Version: 2.5
+Date: 2017-06-15
 Author: R. N. Edmondson
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
@@ -14,10 +14,11 @@ Description: Constructs randomized nested row-and-column type block designs
     combination of quantitative or qualitative model terms.
     Any feasible design size can be defined and, where necessary, 
     a D-optimal swapping routine will find the best fraction for the required 
-    design size. Blocks are nested hierarchically in successive strata and the
-    blocks model in any particular stratum will comprise either a simple nested blocks 
-    design or a crossed row-and-column blocks design. Block sizes in any one stratum 
-    are either all equal or differ, at most, by one plot. The design outputs 
+    design size. Blocks are nested hierarchically and the block model 
+    for any particular level of nesting can comprise either a simple nested blocks 
+    design or a crossed row-and-column blocks design. Block sizes 
+    are either all equal or differ, at most, by one plot within any particular row
+    or column classification and any particular level of nesting. The design outputs 
     include a data frame showing the allocation of treatments to blocks, a table
     showing block levels, the fractional design efficiency, 
     the achieved D-efficiency, the achieved A-efficiency
@@ -27,8 +28,8 @@ Description: Constructs randomized nested row-and-column type block designs
     columns in the bottom stratum of the design is also given.
 License: GPL (>= 2)
 Imports: crossdes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 NeedsCompilation: no
-Packaged: 2017-01-08 12:46:26 UTC; rne
+Packaged: 2017-06-15 15:19:41 UTC; rodney
 Repository: CRAN
-Date/Publication: 2017-01-08 15:42:21
+Date/Publication: 2017-06-15 15:29:23 UTC

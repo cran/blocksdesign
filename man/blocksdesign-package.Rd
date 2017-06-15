@@ -2,8 +2,8 @@
 % Please edit documentation in R/blocksdesign-package.r
 \docType{package}
 \name{blocksdesign-package}
-\alias{blocksdesign}
 \alias{blocksdesign-package}
+\alias{blocksdesign}
 \title{Blocks design package}
 \description{
 The \code{blocksdesign} package provides functionality for the construction of nested or crossed block designs for factorial or 
@@ -49,7 +49,3 @@ Further discussion of designs with repeatedly nested strata can be found in the 
 Bates, D., Maechler, M., Bolker, B. and Walker, S. (2014). lme4: Linear mixed-effects models using 'Eigen' and S4. 
 R package version 1.1-12. https://CRAN.R-project.org/package=lme4
 }
-\seealso{
-\url{http://www.expdesigns.co.uk}
-}
-

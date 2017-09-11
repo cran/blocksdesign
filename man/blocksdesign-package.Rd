@@ -22,7 +22,7 @@ of nested blocks may still be too large to give good control of intra-block vari
 nested within the first set to reduce the intra-block variability still further. This process of recursive nesting of blocks can be repeated indefinitely 
 as often as required until the bottom set of blocks are sufficiently small to give good control of intra-block variability.
  
-Sometimes it can also be advantageous to use a double blocking system in which one set of blocks, usually called row blocks, is crossed with a second set of blocks, usually called column blocks. 
+Sometimes it can also abe advantageous to use a double blocking system in which one set of blocks, usually called row blocks, is crossed with a second set of blocks, usually called column blocks. 
 Double blocking systems can be valuable for controlling block effects in two dimensions simultaneously.
 
 The \code{blocksdesign} package provides functionality for the construction of general block designs with simple or crossed blocks that can be nested repeatedly 
@@ -36,17 +36,17 @@ Currently, the \code{blocksdesign} package has two main block design functions:
 
 i) \code{\link[blocksdesign]{blocks}} : The \code{blocks} function is used to generate block designs for any arbitrary number of unstructured treatments where each treatment can have
  any arbitrary number of replicates. This function generates arbitrary nested block designs with arbitrary depth of nesting 
- where each successive set of blocks is optimized within the levels of each preceding set of blocks using a conditional D-optimality design criterion. 
- Special block designs such as lattice designs or Latin or Trojan square designs are constructed algebraically. 
+ where each succesive set of blocks is optimized within the levels of each preceding set of blocks using a conditional D-optimality design criterion. 
+ Special block designs such as lattice designs or latin or Trojan square designs are constructed algebraically. 
  The outputs from the \code{blocks} function includes a data frame showing the allocation of treatments to blocks for each plot of the design and a table showing
- the achieved D- and A-efficiency factors for each set of nested blocks together with A-efficiency upper bounds, where available. 
- A plan showing the allocation of treatments to blocks in the bottom level of the design is also included in the output.
+  the achieved D- and A-efficiency factors for each set of nested blocks together with A-efficiency upper bounds, where available. 
+  A plan showing the allocation of treatments to blocks in the bottom level of the design is also included in the output.
 
 ii) \code{\link[blocksdesign]{factblocks}} : The \code{factblocks} function is used to generate designs for factorial treatment sets.
- The \code{factblocks} function finds a D-optimal or near D-optimal treatment design
- of the required size for any required factorial model and then finds a D-optimal or near D-optimal block design
- for the fitted treatment design using the same algorithm as in the \code{blocks} function.
- The output from \code{factblocks} includes a data frame of the block and treatment factors for 
+  The \code{factblocks} function finds a D-optimal or near D-optimal treatment design
+  of the required size for any required factorial model and then finds a D-optimal or near D-optimal block design
+  for the fitted treatment design using the same algorithm as in the \code{blocks} function.
+  The output from \code{factblocks} includes a data frame of the block and treatment factors for 
  each plot and a table showing the achieved D-efficiency factors for each set of nested blocks. Fractional factorial efficiency factors based on
  the generalized variance of the complete factorial design are also shown (see the \code{factblocks} documentation for details) 
 

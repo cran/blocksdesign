@@ -20,13 +20,13 @@
 #' The \code{columns} parameter, if any, defines the numbers of nested columns for each level of nesting,
 #' where the first number is the 
 #' number of column blocks crossed with the first set of nested row blocks, the second is the number of column blocks crossed with the second
-#' set of nested row blocks and so on for each level of the \code{rows} parameter.
+#'  set of nested row blocks and so on for each level of the \code{rows} parameter.
 #'  
 #' If the \code{rows} and \code{columns} parameters are both defined they must be of equal length. If the number of columns for any
 #' particular level of nesting is one, then that particular level of nesting will have a simple set of nested row blocks.
 #' If both the \code{rows} parameter and the \code{columns} parameter are null, the default block design will be a set of orthogonal
 #' main blocks equal in number to the highest common factor of the replication numbers. If the \code{rows} parameter is defined but the \code{columns}
-#' parameter is null, the design will be a simple nested blocks design with nested block levels defined by the levels of the \code{rows} parameter.
+#' parameter is null, the design will be a simple nested blocks design with nested block levels defined by the levels of the  \code{rows} parameter.
 #'
 #' Block sizes are as nearly equal as possible and will never differ by more than a single plot for any particular block classification. 
 #' Row blocks and column blocks always contain at least two plots per block and this restriction will constrain the permitted numbers of 
@@ -66,7 +66,7 @@
 #'
 #' Outputs:
 #'
-#' The principle design outputs comprise:
+#' The principle design outputs comprise:parameters must be of the same length unless the \code{columns} parameter is null,
 #' \itemize{
 #'  \item  A data frame showing the allocation of treatments to blocks with successive nested strata arranged in standard block order. \cr
 #'  \item  A table showing the replication number of each treatment in the design. \cr
@@ -86,12 +86,12 @@
 #' \code{columns} parameters must be of equal length unless the \code{columns} parameter is null, in which case the design has a
 #' single column block for each level of nesting and the design becomes a simple nested row blocks design.
 #'
-#' @param seed an integer initializing the random number generator. The default is a random seed.
+#' @param seed  an integer initializing the random number generator. The default is a random seed.
 #'
 #' @param searches  the maximum number of local optima searched for a design optimization. The default number decreases
 #' as the design size increases.
 #'
-#' @param jumps the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.
+#' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.
 #'
 #' @return
 #' \item{Treatments}{A table showing the replication number of each treatment in the design.}
@@ -138,9 +138,6 @@
 #' # 64 treatments x 2 replicates with nested 8 x 8 row-and-column designs in two main blocks
 #' blocks(treatments=64,replicates=2,rows=c(2,8),columns=c(1,8),searches=10)
 #'
-#' # 64 treatments x 2 replicates with two main blocks and a 4 x 4 row-and-column in each main block
-#' blocks(treatments=64,replicates=2,rows=c(2,4),columns=c(1,4),searches=10)
-#' 
 #' # 128 treatments x 2 replicates with two main blocks and 3 levels of nesting
 #' \dontrun{blocks(128,2,c(2,2,2,2))}
 #'
@@ -497,14 +494,17 @@
   # Design data frames for rows columns and row.column blocks
   # ********************************************************************************************************************************************************     
   dataframes=function(rows,columns) {
-    fblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(cumblocks[i],cumblocks[strata+1]/cumblocks[i],
+    nblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(nestblocks[i],cumblocks[strata+1]/cumblocks[i])}))
+    for ( i in 1:length(nestblocks)) levels(nblkdesign[,i])=unlist(lapply(1:nestblocks[i],function(j) {paste0("Blocks_",j)})) 
+    
+    nrowdesign=data.frame(lapply(1:strata,function(i) {gl(rows[i],cumblocks[strata+1]/cumblocks[i]/rows[i],cumblocks[strata+1]) }))
+    for ( i in 1:length(rows)) levels(nrowdesign[,i])=unlist(lapply(1:rows[i],function(j)  {paste0("Rows_",j)})) 
+
+    ncoldesign=data.frame(lapply(1:strata,function(i) {gl(columns[i],cumblocks[strata+1]/cumblocks[i+1],cumblocks[strata+1]) }))
+    for ( i in 1:length(columns)) levels(ncoldesign[,i])=unlist(lapply(1:columns[i],function(j) {paste0("Cols_",j)})) 
+
+     fblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(cumblocks[i],cumblocks[strata+1]/cumblocks[i],
                                                                  labels=unlist(lapply(1:cumblocks[i], function(j) {paste0("Blocks_",j)})))}))
-    nblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(nestblocks[i],cumblocks[strata+1]/cumblocks[i],
-                                                                 labels=unlist(lapply(1:cumblocks[i], function(j) {paste0("Blocks_",j)})))})) 
-    nrowdesign=data.frame(lapply(1:strata,function(i) {gl(rows[i],cumblocks[strata+1]/cumblocks[i]/rows[i],cumblocks[strata+1],
-                                                          labels=unlist(lapply(1:rows[i], function(j) {paste0("Rows_",j)}))) }))
-    ncoldesign=data.frame(lapply(1:strata,function(i) {gl(columns[i],cumblocks[strata+1]/cumblocks[i+1],cumblocks[strata+1],
-                                                          labels=unlist(lapply(1:columns[i], function(j) {paste0("Cols_",j)}))) }))
     frowdesign=data.frame(lapply(1:ncol(nrowdesign), function(i){ interaction(fblkdesign[,i], nrowdesign[,i], sep = ":", lex.order = TRUE) }))
     fcoldesign=data.frame(lapply(1:ncol(ncoldesign), function(i){ interaction(fblkdesign[,i], ncoldesign[,i], sep = ":", lex.order = TRUE) }))
     colnames(fblkdesign)=unlist(lapply(1:ncol(fblkdesign), function(j) {paste0("Level_",j-1)}))

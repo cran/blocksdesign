@@ -14,7 +14,7 @@
 #' treatment design where the fractional part of the design, if any, is chosen by optimizing a 
 #' D-optimal fraction of that size for that treatment design.
 #'
-#' The \code{treatments} parameter defines the treatment factors of the design and must be a data frame with
+#' The \code{treatments} parameter defines the treatment factors of the design and must be be a data frame with
 #' a column for each factor and a row for each factorial combination (see examples). The treatment factors 
 #' can be any mixture of qualitative or quantitative level factors and the treatment model can be any feasible model defined 
 #' by the \code{models} formula of the \code{\link[stats]{model.matrix}} package (see examples). 
@@ -72,9 +72,9 @@
 #'  \item  A table showing the block levels and the achieved D-efficiency factors for each stratum. \cr
 #' }
 #'
-#' @param treatments a data frame with columns for individual treatment factors and rows for individual treatment factor combinations.
+#' @param treatments  a data frame with columns for individual treatment factors and rows for individual treatment factor combinations.
 #'
-#' @param replicates a single replication number, not necessarily integral.
+#' @param replicates  a single replication number, not necessarily integral.
 #'
 #' @param rows the number of rows nested in each preceding block for each level of nesting from the top-level block downwards. The top-level block is a
 #' single super-block which need not be defined explicitly. 
@@ -86,11 +86,11 @@
 #' @param model a model equation for the treatment factors in the design where the equation is defined using the model.matrix notation
 #' in the {\link[stats]{model.matrix}} package. If undefined, the model is a full factorial treatment design.
 #'
-#' @param seed an integer initializing the random number generator. The default is a random seed.
+#' @param seed  an integer initializing the random number generator. The default is a random seed.
 #'
-#' @param searches the maximum number of local optima searched for a design optimization. The default is 1 plus the floor of 10000 divided by the number of plots.
+#' @param searches  the maximum number of local optima searched for a design optimization. The default is 1 plus the floor of 10000 divided by the number of plots.
 #'
-#' @param jumps the number of pairwise random treatment swaps used to escape a local maximum. The default is a single swap.
+#' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.
 #'
 #' @return
 #' \item{Treatments}{The treatment factors defined by the \code{treatments} inputs in standard factorial order.}
@@ -143,7 +143,7 @@
 #' # Second-order model for two qualitative and two quantitative level factors in 4 randomized blocks
 #' GF=expand.grid(F1=factor(1:2),F2=factor(1:3),V1=1:3,V2=1:4)
 #' modelform=" ~ F1 + F2 + poly(V1,2) +  poly(V2,2) + (poly(V1,1)+F1+F2):(poly(V2,1)+F1+F2) "
-#' factblocks(treatments=GF,model=modelform,rows=4,searches=5)
+#' \dontrun{factblocks(treatments=GF,model=modelform,rows=4,searches=5)}
 #' 
 #' # Plackett and Burman design for eleven 2-level factors in 12 runs (needs large number of searches)
 #' GF=expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2),
@@ -514,14 +514,17 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
   # Design data frames for rows columns and row.column blocks
   # ********************************************************************************************************************************************************     
   dataframes=function(rows,columns) {
+    nblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(nestblocks[i],cumblocks[strata+1]/cumblocks[i])}))
+    for ( i in 1:length(nestblocks)) levels(nblkdesign[,i])=unlist(lapply(1:nestblocks[i],function(j) {paste0("Blocks_",j)})) 
+    
+    nrowdesign=data.frame(lapply(1:strata,function(i) {gl(rows[i],cumblocks[strata+1]/cumblocks[i]/rows[i],cumblocks[strata+1]) }))
+    for ( i in 1:length(rows)) levels(nrowdesign[,i])=unlist(lapply(1:rows[i],function(j)  {paste0("Rows_",j)})) 
+
+    ncoldesign=data.frame(lapply(1:strata,function(i) {gl(columns[i],cumblocks[strata+1]/cumblocks[i+1],cumblocks[strata+1]) }))
+    for ( i in 1:length(columns)) levels(ncoldesign[,i])=unlist(lapply(1:columns[i],function(j) {paste0("Cols_",j)}))
+    
     fblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(cumblocks[i],cumblocks[strata+1]/cumblocks[i],
                                                              labels=unlist(lapply(1:cumblocks[i], function(j) {paste0("Blocks_",j)})))}))
-    nrowdesign=data.frame(lapply(1:strata,function(i)        {gl(rows[i],cumblocks[strata+1]/cumblocks[i]/rows[i],cumblocks[strata+1],
-                                                          labels=unlist(lapply(1:rows[i], function(j) {paste0("Rows_",j)}))) }))
-    nblkdesign=as.data.frame(lapply(1:(strata+1),function(i) {gl(nestblocks[i],cumblocks[strata+1]/cumblocks[i],
-                                                             labels=unlist(lapply(1:cumblocks[i], function(j) {paste0("Blocks_",j)})))})) 
-    ncoldesign=data.frame(lapply(1:strata,function(i) {gl(columns[i],cumblocks[strata+1]/cumblocks[i+1],cumblocks[strata+1],
-                                                          labels=unlist(lapply(1:columns[i], function(j) {paste0("Cols_",j)}))) }))
     frowdesign=data.frame(lapply(1:ncol(nrowdesign), function(i){ interaction(fblkdesign[,i], nrowdesign[,i], sep = ":", lex.order = TRUE) }))
     fcoldesign=data.frame(lapply(1:ncol(ncoldesign), function(i){ interaction(fblkdesign[,i], ncoldesign[,i], sep = ":", lex.order = TRUE) }))
     colnames(fblkdesign)=unlist(lapply(1:ncol(fblkdesign), function(j) {paste0("Level_",j-1)}))

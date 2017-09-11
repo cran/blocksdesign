@@ -26,7 +26,7 @@ in the {\link[stats]{model.matrix}} package. If undefined, the model is a full f
 
 \item{seed}{an integer initializing the random number generator. The default is a random seed.}
 
-\item{jumps}{the number of pairwise random treatment swaps used to escape a local maximum. The default is a single swap.}
+\item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.}
 }
 \value{
 \item{Treatments}{The treatment factors defined by the \code{treatments} inputs in standard factorial order.}
@@ -50,7 +50,7 @@ Designs can be based on any multiple, not necessarily integral, of the complete 
 treatment design where the fractional part of the design, if any, is chosen by optimizing a 
 D-optimal fraction of that size for that treatment design.
 
-The \code{treatments} parameter defines the treatment factors of the design and must be a data frame with
+The \code{treatments} parameter defines the treatment factors of the design and must be be a data frame with
 a column for each factor and a row for each factorial combination (see examples). The treatment factors 
 can be any mixture of qualitative or quantitative level factors and the treatment model can be any feasible model defined 
 by the \code{models} formula of the \code{\link[stats]{model.matrix}} package (see examples). 
@@ -139,7 +139,7 @@ factblocks(treatments=GF,model=" ~ (F1+F2+F3+F4+F5)^2",rows=3,replicates=(1/3),s
 # Second-order model for two qualitative and two quantitative level factors in 4 randomized blocks
 GF=expand.grid(F1=factor(1:2),F2=factor(1:3),V1=1:3,V2=1:4)
 modelform=" ~ F1 + F2 + poly(V1,2) +  poly(V2,2) + (poly(V1,1)+F1+F2):(poly(V2,1)+F1+F2) "
-factblocks(treatments=GF,model=modelform,rows=4,searches=5)
+\dontrun{factblocks(treatments=GF,model=modelform,rows=4,searches=5)}
 
 # Plackett and Burman design for eleven 2-level factors in 12 runs (needs large number of searches)
 GF=expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2),

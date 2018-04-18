@@ -1,12 +1,11 @@
 #' @title Block designs for factorial treatment sets
-#'
+#' 
 #' @description
-#'
+#' 
 #' Constructs randomized nested block designs for factorial or fractional factorial treatment designs with any
 #' feasible depth of nesting and up to two crossed block structures in each level of nesting.
 #'
 #' @details
-#'
 #' \code{factblocks} generates blocked factorial designs for general factorial treatment structures possibly including
 #' mixtures of qualitative and quantitative level factors. Qualitative level factors are
 #' modelled factorially while quantitative level factors are modelled by polynomials of the required degree.  
@@ -50,7 +49,7 @@
 #' and then optimizes the columns blocks, if any, conditional on the rows blocks.
 #' 
 #' The efficiency factor of a fractional factorial design is the generalized variance of the complete factorial design divided by the generalized variance of
-#' the fractional factorial design where the generalized variance of a design is the (1/p)th power of the determinant of the crossed-product of the p-dimensional
+#' the fractional factorial design where the generalized variance of a design is the (1/p)<sup>th</sup> power of the determinant of the crossed-product of the p-dimensional
 #' model matrix divided by the number of observations in the design. 
 #'
 #' Comment:
@@ -102,6 +101,15 @@
 #' \item{searches}{Maximum number of searches in each stratum.}
 #' \item{jumps}{Number of random treatment swaps to escape a local maxima.}
 #'
+#' @name factblocks-deprecated
+#' @usage factblocks(treatments,replicates,rows,columns,model,searches,seed,jumps)
+#' @seealso \code{link{blocksdesign-deprecated}}
+#' @keywords internal
+NULL
+
+#' @rdname blocksdesign-deprecated
+#' @section \code{factblocks}:
+#' For \code{factblocks}, use \code{\link{design}}.
 #'
 #' @references
 #'
@@ -125,8 +133,6 @@
 #' GF = expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2))
 #' factblocks(treatments=GF,model="~ F1+F2+F3+F4+F5",replicates=.5,rows=4,columns=4,searches=20)
 #' 
-#' # Quadratic regression for one 6-level numeric factor in 2 randomized blocks assuming 10/6 fraction
-#' factblocks(treatments=expand.grid(X=1:6),model=" ~ poly(X,2)",rows=2,searches=5,replicates=10/6) 
 #' 
 #' # Second-order model for five qualitative 2-level factors in 4 randomized blocks
 #' GF=expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2))
@@ -152,9 +158,36 @@
 #' 
 #'
 #' @export
+  factblocks=function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,searches=NULL,seed=NULL,jumps=1) {
+  .Deprecated("genblocks")
+  "My return value"
+}
 #' @importFrom stats anova lm model.matrix as.formula setNames
-#'
-factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,searches=NULL,seed=sample(10000,1),jumps=1) {
+  factblocks=function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,searches=NULL,seed=NULL,jumps=1) {
+  options(contrasts=c('contr.SAS','contr.poly'))
+  tol=.Machine$double.eps^0.5
+  if (missing(treatments)|is.null(treatments)|!is.data.frame(treatments) ) stop(" Treatments data frame missing or not defined ")
+  for (i in 1:ncol(treatments))
+    if (isTRUE(all.equal(treatments[,i], rep(treatments[1,i], length(treatments[,i]))))) stop("One or more treatment factors is a constant which is not valid")
+  if (is.null(replicates)|anyNA(replicates)|any(is.nan(replicates))|any(!is.finite(replicates))) stop(" replicates invalid")
+  if (!exists("seed")) seed=sample(10000,1)
+  if (is.null(seed)) seed=sample(10000,1)
+  if (is.na(seed) | !is.finite(seed) | is.nan(seed) | seed%%1!=0 | seed<0 ) stop(" seed parameter invalid  ")
+  set.seed(seed)
+  if (is.na(jumps) | !is.finite(jumps) | is.nan(jumps) | jumps<1 | jumps%%1!=0 | jumps>10) stop(" number of jumps parameter is invalid (max is 10) ")
+  if (ceiling(replicates)==floor(replicates)) hcf=replicates else hcf=1
+  if (is.null(rows)) rows=hcf
+  if (anyNA(rows)|any(is.nan(rows))|any(!is.finite(rows))|any(rows%%1!=0)|any(rows<1)|is.null(rows)) stop(" rows invalid")
+  if (is.null(columns)) columns=rep(1,length(rows))
+  if (anyNA(columns)|any(is.nan(columns))|any(!is.finite(columns))|any(columns%%1!=0)|any(columns<1)) stop(" columns parameter invalid")
+  if (length(columns)!=length(rows)) stop("rows and columns vectors must be the same length ")
+  if (max(rows*columns)==1) { rows=1; columns=1} else {index=rows*columns>1; rows=rows[index]; columns=columns[index]}
+  if ( replicates==2 && length(rows)>1 && length(columns)>1 && any((rows==2 & columns==2)[-length(rows)]) && is.null(model) ) 
+    stop(" 2 x 2 row-and-column designs with two treatment replicates confound one treatment contrast between the row-by-column blocks
+        and are unsuitable for complete factorial designs: you could try replacing the 2 x 2 row-and-column design by 4 x 1 row-and-column design.") 
+  if (is.null(model)) model=paste0("~ ",paste0( unlist(lapply( 1:ncol(treatments), 
+        function(i) {if (!is.factor(treatments[,i])) paste0("poly(",colnames(treatments)[i],",",length(unique(treatments[,i]))-1,")") else 
+              colnames(treatments)[i]})), collapse="*"))
 
   # ********************************************************************************************************************************************************
   # Finds row and column sizes in each stratum of a design
@@ -237,9 +270,10 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
     k=nlevels(BF)
     if (k==1) return(c(1,1))
     if (nlevels(TF)<=k)
-      e=eigen( (diag(nlevels(TF))-crossprod(t(table(TF, BF)*(1/sqrt(tabulate(TF))) ) * (1/sqrt(tabulate(BF))))), symmetric=TRUE, only.values = TRUE)$values[1:(nlevels(TF)-1)] else
-        e=c(rep(1,(nlevels(TF)-k)),
-            eigen((diag(k)-tcrossprod(t(table(TF, BF)*(1/sqrt(tabulate(TF))) ) * (1/sqrt(tabulate(BF))))), symmetric=TRUE, only.values = TRUE)$values[1:(k-1)])
+      e=eigen( (diag(nlevels(TF))-crossprod(t(table(TF, BF)*(1/sqrt(tabulate(TF))) ) * (1/sqrt(tabulate(BF))))), 
+               symmetric=TRUE, only.values = TRUE)$values[1:(nlevels(TF)-1)] else
+        e=c(rep(1,(nlevels(TF)-k)),eigen((diag(k)-tcrossprod(t(table(TF, BF)*(1/sqrt(tabulate(TF))) ) * (1/sqrt(tabulate(BF))))), 
+               symmetric=TRUE, only.values = TRUE)$values[1:(k-1)])
       return(round(c(mean(e)*prod(e/mean(e))^(1/length(e)),1/mean(1/e)),6))
   }
   # ********************************************************************************************************************************************************
@@ -260,10 +294,10 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
     colnames(efficiencies)=c("Strata","Blocks","D-Efficiencies","A-Efficiencies", "A-Bounds")
     return(efficiencies)
   }
-     # ******************************************************************************************************************************************************** 
-     # Maximises the blocks design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
-     # Sampling is used initially when many feasible swaps are available but later a full search is used to ensure steepest ascent optimization.
-     # ********************************************************************************************************************************************************
+  # ******************************************************************************************************************************************************** 
+  # Maximises the blocks design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
+  # Sampling is used initially when many feasible swaps are available but later a full search is used to ensure steepest ascent optimization.
+  # ********************************************************************************************************************************************************
      DMax=function (VTT,VBB,VTB,TF,MF,TM,BM,restrict)  {
        locrelD=1
        mainSizes=tabulate(restrict)
@@ -399,9 +433,9 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
     if ( length(candidates)>1 ) s2=sample(candidates,1) else s2=candidates[1] 
     return(c(s1,s2))
   }
-  # ********************************************************************************************************************************************************
+  # *******************************************************************************************************************************************************
   # Initial randomized starting design. If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
-  # ********************************************************************************************************************************************************
+  # *******************************************************************************************************************************************************
   NonSingular=function(TF,MF,BF,restrict,TM,BM) {
     fullrank=ncol(cbind(TM,BM))
     Q=qr(t(cbind(BM,TM)))
@@ -425,13 +459,13 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
   # *******************************************************************************************************************************************************
   # Optimize the nested Blocks assuming a possible set of Main block constraints Initial randomized starting design.
   # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
-  # ********************************************************************************************************************************************************
+  # *******************************************************************************************************************************************************
   blocksOpt=function(TF,MF,fBF,BF,restrict) {
       TM=model.matrix(as.formula(model),TF)[,-1,drop=FALSE] # drops mean contrast
-      TM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(TM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)})) #centres treatments within main blocks
+      TM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(TM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)})) #centres within main blocks
       if (nlevels(MF)==1) BM=model.matrix(as.formula(~BF))[,-1,drop=FALSE] else BM=model.matrix(as.formula(~MF+MF:BF))[,-c(1:nlevels(MF)),drop=FALSE]
-      BM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)})) #centres sub-blocks within main blocks
-      BM=BM[ ,as.numeric(matrix(1:(nlevels(BF)*nlevels(MF)),nrow=nlevels(BF),ncol=nlevels(MF),byrow=TRUE)[-nlevels(BF),]) ,drop=FALSE] # reorder within main blocks
+      BM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)})) #centres  within main blocks
+      BM=BM[ ,as.numeric(matrix(1:(nlevels(BF)*nlevels(MF)),nrow=nlevels(BF),ncol=nlevels(MF),byrow=TRUE)[-nlevels(BF),]) ,drop=FALSE] #reorder in main blocks
       if ( (ncol(cbind(TM,BM))+1) > nrow(TM)  ) stop( paste("Too many parameters: plots df = ",nrow(TM)-1," model:df = ",ncol(cbind(TM,BM)) )) 
       nonsing=NonSingular(TF,MF,fBF,restrict,TM,BM)
       TF=nonsing$TF
@@ -476,35 +510,31 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
       gfracDeff=0
       if (is.null(searches)) searches=1+10000%/%nunits
       for (i in 1:searches) {
-        counter=0
-        repeat {
-         rerand=unlist(lapply(1:ceiling(replicates),function(j){(j-1)*nrow(TF)+sample(1:nrow(TF))}))
-         fTM=FTM[rerand,,drop=FALSE]
-         if (counter>99 | qr(fTM[1:nunits,,drop=FALSE])$rank==ncol(FTM)) break else counter=counter+1
+        
+        for (z in seq_len(1000)) {
+          rerand=unlist(lapply(1:ceiling(replicates),function(j){(j-1)*nrow(FTF) + sample(nrow(FTF))}))
+          if (qr(FTM[rerand[1:nunits],,drop=FALSE])$rank==ncol(FTM)) break
         }
-       if (counter>99) stop("Unable to find a non-singular starting design of the required size by random search ")
-       fTF=FTF[rerand,,drop=FALSE]
-       Info=crossprod(fTM[1:nunits,,drop=FALSE]) # the information matrix of the the non-singular starting design
-       V=chol2inv(chol(Info)) # V is the variance matrix of the the non-singular starting design
+        if (z>999) stop("Unable to find a non-singular treatment start design of the required size by random search ")
+        FTM=FTM[rerand,,drop=FALSE]
+        FTF=FTF[rerand,,drop=FALSE]
+       V=chol2inv(chol(crossprod(FTM[1:nunits,,drop=FALSE]))) # V is the variance matrix of the the non-singular starting design
        repeat {
-          M1VM2=       tcrossprod(tcrossprod(fTM[(bunits+1):nunits,,drop=FALSE],V),fTM[(nunits+1):nrow(fTM),,drop=FALSE])
-          M1VM1=1-diag(tcrossprod(tcrossprod(fTM[(bunits+1):nunits,,drop=FALSE],V),fTM[(bunits+1):nunits,,drop=FALSE] ))
-          M2VM2=1+diag(tcrossprod(tcrossprod(fTM[(nunits+1):nrow(fTM),,drop=FALSE],V),fTM[(nunits+1):nrow(fTM),,drop=FALSE]))
+          M1VM2=       tcrossprod(tcrossprod(FTM[(bunits+1):nunits,,drop=FALSE],V),FTM[(nunits+1):nrow(FTM),,drop=FALSE])
+          M1VM1=1-diag(tcrossprod(tcrossprod(FTM[(bunits+1):nunits,,drop=FALSE],V),FTM[(bunits+1):nunits,,drop=FALSE] ))
+          M2VM2=1+diag(tcrossprod(tcrossprod(FTM[(nunits+1):nrow(FTM),,drop=FALSE],V),FTM[(nunits+1):nrow(FTM),,drop=FALSE]))
           Z=M1VM2**2 + tcrossprod(M1VM1,M2VM2)
-          maxindex=which.max(Z)
-          i=1+(maxindex-1)%%nrow(Z)
-          j=1+(maxindex-1)%/%nrow(Z)
-          if (Z[i,j]<(1+tol)) break
-          V=fractUpDate(V ,as.numeric(fTM[bunits+i,]) ,  as.numeric(fTM[nunits+j,]) )# parameters(V,row_swappedout,row_swappedin) 
-          fTF[ c(bunits+i,nunits+j), ] =fTF[ c(nunits+j,bunits+i), ]
-          fTM[ c(bunits+i,nunits+j), ]= fTM[ c(nunits+j,bunits+i), ]
+          z=which(Z == max(Z), arr.ind = TRUE)[1,]
+          if (  Z[z[1],z[2]]<(1+tol)) break
+          V=fractUpDate(V ,as.numeric(FTM[bunits+z[1],]) ,  as.numeric(FTM[nunits+z[2],]) )# parameters(V,row_swappedout,row_swappedin) 
+          FTF[ c(bunits+z[1],nunits+z[2]), ] =FTF[ c(nunits+z[2],bunits+z[1]), ]
+          FTM[ c(bunits+z[1],nunits+z[2]), ]= FTM[ c(nunits+z[2],bunits+z[1]), ]
         }
-      fracDeff=det(crossprod(fTM[(1:nunits),,drop=FALSE]))**(1/ncol(fTM))/nunits
-      if (fracDeff>gfracDeff) {
+      fracDeff=det(crossprod(FTM[(1:nunits),,drop=FALSE]))**(1/ncol(FTM))/nunits
+      if (fracDeff>(gfracDeff+tol)) {
         gfracDeff=fracDeff
         geff=gfracDeff/maxDeff
-        gTF=fTF[(1:nunits),,drop=FALSE]
-        if (geff>(1-tol) & allfactors) break
+        gTF=FTF[(1:nunits),,drop=FALSE]
         }
       }
     }
@@ -539,28 +569,6 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
   # Main design program which tests input variables, omits any single replicate treatments, optimizes design, replaces single replicate
   # treatments, randomizes design and prints design outputs including design plans, incidence matrices and efficiency factors
   # ********************************************************************************************************************************************************
-  options(contrasts=c('contr.SAS','contr.poly'))
-  tol=.Machine$double.eps^0.5
-  if (missing(treatments)|is.null(treatments)|!is.data.frame(treatments) ) stop(" Treatments data frame missing or not defined ")
-  for (i in 1:ncol(treatments))
-    if (isTRUE(all.equal(treatments[,i], rep(treatments[1,i], length(treatments[,i]))))) stop("One or more treatment factors is a constant which is not valid")
-  if (is.null(replicates)|anyNA(replicates)|any(is.nan(replicates))|any(!is.finite(replicates))) stop(" replicates invalid")
-  if (is.na(seed) | !is.finite(seed) | is.nan(seed) | seed%%1!=0 | seed<0 ) stop(" seed parameter invalid  ")
-    set.seed(seed)
-  if (is.na(jumps) | !is.finite(jumps) | is.nan(jumps) | jumps<1 | jumps%%1!=0 | jumps>10) stop(" number of jumps parameter is invalid (max is 10) ")
-  if (ceiling(replicates)==floor(replicates)) hcf=replicates else hcf=1
-  if (is.null(rows)) rows=hcf
-  if (anyNA(rows)|any(is.nan(rows))|any(!is.finite(rows))|any(rows%%1!=0)|any(rows<1)|is.null(rows)) stop(" rows invalid")
-  if (is.null(columns)) columns=rep(1,length(rows))
-  if (anyNA(columns)|any(is.nan(columns))|any(!is.finite(columns))|any(columns%%1!=0)|any(columns<1)) stop(" columns parameter invalid")
-  if (length(columns)!=length(rows)) stop("rows and columns vectors must be the same length ")
-  if (max(rows*columns)==1) { rows=1; columns=1} else {index=rows*columns>1; rows=rows[index]; columns=columns[index]}
-  if ( replicates==2 && length(rows)>1 && length(columns)>1 && any((rows==2 & columns==2)[-length(rows)]) && is.null(model) ) 
-      stop(" 2 x 2 row-and-column designs with two treatment replicates confound one treatment contrast between the row-by-column blocks
-        and are unsuitable for complete factorial designs: you could try replacing the 2 x 2 row-and-column design by 4 x 1 row-and-column design.") 
-  if (is.null(model)) model=paste0("~ ",paste0( unlist(lapply( 1:ncol(treatments), 
-               function(i) {if (!is.factor(treatments[,i])) paste0("poly(",colnames(treatments)[i],",",length(unique(treatments[,i]))-1,")") else 
-                            colnames(treatments)[i]})), collapse="*"))
   # constructs treatment  data frame possibly a fractional factorial design 
   Z=factorial(treatments,model,replicates)
   treatments=Z$TF
@@ -586,7 +594,7 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
   
   if (cumrows[strata]*2>nunits) stop("Too many row blocks for the available plots  - every row block must contain at least two plots")
   if (cumcols[strata]*2>nunits) stop("Too many column blocks for the available plots  - every column block must contain at least two plots")
-  if (cumblocks[strata+1]>nunits & cumrows[strata]>1 & cumcols[strata]>1) stop("Too many blocks - every row-by-column intersection must contain at least one plot")
+  if (cumblocks[strata+1]>nunits & cumrows[strata]>1 & cumcols[strata]>1) stop("Too many blocks - row-by-column intersections must contain at least one plot")
   
  # nested factor level data frames
   df1=dataframes(rows,columns)
@@ -613,7 +621,7 @@ factblocks = function(treatments,replicates=1,rows=NULL,columns=NULL,model=NULL,
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - please try a simpler block or treatment design")
   if (max(columns)==1) {
     fblkDesign=cbind(fblkDesign,Plots=factor(1:nunits))
-    fblkDesign=data.frame(lapply(1:ncol(fblkDesign), function(r){sample(nlevels(fblkDesign[,r]))[fblkDesign[,r]]})) # Randomize labels - NB gives numeric columns
+    fblkDesign=data.frame(lapply(1:ncol(fblkDesign), function(r){sample(nlevels(fblkDesign[,r]))[fblkDesign[,r]]})) # Randomize labels - numeric columns
     fblkDesign=cbind(fblkDesign,TF)
     fblkDesign=fblkDesign[do.call(order, fblkDesign), ] # re-order
     blocksizes=table(fblkDesign[,ncol(fblkDesign)-ncol(TF)-1])[unique(fblkDesign[,ncol(fblkDesign)-ncol(TF)-1])]

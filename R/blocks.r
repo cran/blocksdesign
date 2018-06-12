@@ -101,7 +101,8 @@
 #' 
 #' 
 #' @export
-#' @importFrom stats anova lm model.matrix as.formula setNames
+#' @importFrom stats anova lm model.matrix as.formula setNames 
+#' @importFrom crossdes MOLS
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
    options(contrasts=c('contr.SAS','contr.poly'))
@@ -158,7 +159,7 @@
       TF[1:(2*v*v)]=c(seq_len(v*v),seq_len(v*v)[order(rep(0:(v-1),v))]   )
       if (r>2) {
         index=which(c(16,64,256,1024,4096,16384,81,729,6561,625,2401)==(v*v))
-        mols=crossdes::MOLS(c(2,2,2,2,2,2,3,3,3,5,7)[index],c(2,3,4,5,6,7,2,3,4,2,2)[index])
+        mols=MOLS(c(2,2,2,2,2,2,3,3,3,5,7)[index],c(2,3,4,5,6,7,2,3,4,2,2)[index])
         for (i in 1:(r-2)  )
           TF[ c( (v*v*(i-1)+1) : (v*v*i)) + 2*v*v  ] = seq_len(v*v)[order(as.numeric(mols[,,i]))]
       }

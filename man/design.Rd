@@ -8,23 +8,23 @@ design(treatments, blocks = NULL, treatments_model = NULL,
   weighting = 0.5, searches = NULL, seed = NULL, jumps = 1)
 }
 \arguments{
-\item{treatments}{a single treatment factor or a data frame containing multiple treatment factors. 
-Treatment factors can be qualitative or quantitative (numeric) level factors.}
+\item{treatments}{a single treatment factor or a data frame containing one or more qualitative or 
+quantitative (numeric) level treatment factors.}
 
-\item{blocks}{a single blocks factor or a data frame containing multiple block factors in the
-required order of fitting. Block factors must be qualitative level factors.}
+\item{blocks}{a single blocks factor or a data frame containing one or more qualitative level block
+factors in the required order of fitting.}
 
-\item{treatments_model}{a model formula for the required treatments design. The default 
-is a fully crossed factorial model.}
+\item{treatments_model}{a model formula for the required treatments design where the default 
+formula assumes a fully crossed factorial treatment model.}
 
-\item{weighting}{a weighting factor between 0 and 1 for general crossed block designs. 
-The default weighting is 0.5.}
+\item{weighting}{a weighting factor between 0 and 1 for a weighted combination of additive 
+model and multiplicative model block factor effects.}
 
-\item{searches}{the maximum number of local optima searched at each stage of a treatment 
-and block design optimization. The default depends on the design size.}
+\item{searches}{the maximum number of local optima searched at each stage of a
+design optimization. The default depends on the design size.}
 
-\item{seed}{an integer initializing the random number generator. The default is a positive 
-integer seed chosen randomly.}
+\item{seed}{an integer initializing the random number generator. The default is a random
+integer seed.}
 
 \item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima. 
 The default is a single swap.}
@@ -45,12 +45,47 @@ Constructs D-optimal block and treatment designs for feasible combinations of ne
 factors and feasible linear treatment models.
 }
 \details{
-\code{treatments} is a treatments factor or a data frame for two or more columns of 
-treatment factors where the factors can be qualitative or quantitative. 
+\code{treatments} is a treatments factor or a data frame of two or more qualitative or quantitative
+level treatment factors. The \code{treatments} object should contain all the required treatments or treatment
+combinations but must not exceed the total number of design plots defined by the
+blocks parameter (see \code{blocks} below). The \code{treatments} object is replicated in the ratio of the 
+total number of design plots to the total number of treatment plots where the integer part of the ratio, 
+possibly zero, defines the number of complete replications of the \code{treatments} object while the fractional 
+part of the ratio, possibly zero, defines a sample fraction of that size drawn from the complete set of 
+\code{treatments} plots. Samples are drawn without replacement and are chosen to optimize the D-optimality
+of the \code{treatments_model}. 
 
-\code{blocks} is a blocks factor or a data frame for two or more columns of qualitative block factors
-where the default is a single level factor of length equal to the length of the \code{treatments} factors. 
+\code{blocks} is an optional blocks factor or a data frame of two or more qualitative block factors
+with a default equal to a single complete block of size equal to the number of \code{treatments} plots. 
+The \code{design} algorithm fits the blocks design by sequentially adding \code{blocks} factors
+in the column order of the \code{blocks} data frame. Each block factor is optimized  
+conditionally assuming all preceding block factors are fixed but ignoring all succeeding block factors.
+This method of optimization allows the blocking factors to be fitted in order of importance with the 
+largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
 
+Where a blocks design is fully nested, block effects are optimized sequentially with
+each added factor optimized by constrained pairwise swapping between blocks with the constraint that
+all previously added blocks factors remain unchanged. In practice, this requires that the levels of each successively added nested 
+\code{blocks} factor must be nested within the levels of all previously added factors so that each newly added factor can be  
+optimized recursively within the levels of all previously added factors.
+
+Where a design has fully crossed block factors, the levels of each added crossed block factor will occur with all the 
+level of each previously added crossed factor which means that the main effects of an added crossed blocks factor can 
+be optimized by swapping treatments between the levels of the added factor while constrained within the levels of the
+previously added factors. Sometimes, however, the intersections of crossed block factors contain blocks of two or more plots
+and then it can be desirable to optimize the individual intersection blocks as well as optimizing the main factor effects 
+It is not feasible simply to swap treatments between intersection blocks as that would degrade the optimization of the
+ additive main effects design so, instead, the \code{design} algorithm provides an 
+option for optimizing a weighted combination of an additive crossed blocks information matrix for the additive crossed block
+effects and a multiplicative crossed blocks information matrix for the interaction block effects. 
+
+If the \code{weighting} factor is zero, the design is a fully additive crossed blocks model, if the \code{weighting} factor
+ is one the design is a fully multiplicative crossed blocks model while for any intermediate \code{weighting}, the design is a
+compromise between a fully additive and a fully multiplicative crossed blocks model. The default \code{weighting} factor is 0.5
+which seems to give a good compromise for most crossed blocks designs.
+If a design is fully nested, or if the intersection blocks of a crossed blocks design are single plots, the \code{weighting} factor 
+has no impact on the design algorithm. 
+ 
 \code{treatments_model} is a design formula for the \code{treatments} factors based on the
 \code{models} formula of the \code{\link[stats]{model.matrix}} package. The default assumes
  a complete factorial design.
@@ -58,28 +93,6 @@ where the default is a single level factor of length equal to the length of the 
 The total number of design plots is defined by the length of the \code{blocks} factors, if present, 
 otherwise by the length of the \code{treatments} factors. 
 
-The treatments are replicated in the ratio of the total number of design plots to the length
-of the \code{treatments} factors. The integer part of the ratio, possibly zero, defines the number of
-complete replications of the \code{treatments} factors while the fractional part of the ratio, if any, 
-defines a sample fraction of that size drawn from the set of \code{treatments} factor combinations. 
-Samples are drawn without replacement and are chosen to optimize the D-optimality of the \code{treatments_model}. 
-
-The \code{design} algorithm builds the blocks design by sequentially adding \code{blocks} factors
-in the column order of the \code{blocks} data frame. Each block factor is optimized  
-conditional on all preceding block factors but ignoring all succeeding block factors.
-This method of optimization allows the blocking factors to be fitted in order of importance with the 
-largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
-
-For fully nested block designs, the block effects are optimized recursively assuming a simple additive block effects model.
-For general crossed block designs, the crossed blocks intersections may contain blocks of two or more plots and 
-then both the main effects and the intersection blocks must be optimized simultaneously.
-For this situation, the \code{design} algorithm 
-provides an option for optimizing a weighted combination of the
-additive crossed blocks information matrix and the multiplicative crossed blocks information matrix. If the \code{weighting} 
-factor is zero, the design is a fully additive crossed blocks model, if the \code{weighting} factor is one the design is a 
-fully multiplicative crossed blocks model while for any intermediate \code{weighting}, the design is a
-compromise between a fully additive and a fully multiplicative crossed blocks model.
- 
 The \code{blocks_model} output shows the overall achieved D-efficiency for each sequentially fitted blocks models. 
 For nested blocks, the \code{blocks_model} output shows the efficiency factors for each successively nested
 blocks design whereas for crossed blocks the \code{blocks_model} output shows the efficiency 
@@ -93,7 +106,6 @@ treatment design. Using this definition, it is possible for quantitative level t
 factors greater than one therefore the main use of efficiency factors is to compare different optimizations
 of the same design.  
 
-  
 Outputs:
 
 The principle design outputs comprise:
@@ -110,6 +122,15 @@ The principle design outputs comprise:
 ## For optimum results, the number of searches may need to be increased in practice.
 ## Designs should be rebuilt repeatedly to check that a near-optimum design has been found.  
 
+## 48 treatments in 2 replicate blocks of size 4 x 12 with 2 main rows and 3 main columns
+
+treatments=factor(1:48)
+replicates=factor(rep(1:2,each=48))
+rows=factor(rep(rep(1:2,each=24),2))
+cols=factor(rep(rep(1:3,each=4),8))
+blocks=data.frame(replicates,rows,cols)
+design(treatments,blocks,searches=5)
+
 ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 treatments = factor(1:12)
 Blocks = factor(rep(1:4,each=12))
@@ -125,9 +146,9 @@ MainRows = factor(rep(1:4,each=12))
 Columns = factor(rep(1:12,4))
 blocks = data.frame(MainCols,MainRows,Columns)
 \donttest{design(treatments,blocks,searches=100,weighting=0)$blocks_model
-design(treatments,blocks,searches=100,weighting=0.5)$blocks_model
+design(treatments,blocks,searches=100)$blocks_model
 design(treatments,blocks,searches=100,weighting=1)$blocks_model}
- 
+
 ## 4 x 13 Row-and-column design for 4 replicates of 13 treatments 
 ## Youden design Plan 13.5 Cochran and Cox (1957).
 treatments=factor(1:13)
@@ -136,14 +157,18 @@ Cols =factor(rep(1:13,4))
 blocks =data.frame(Rows,Cols)
 \donttest{design(treatments,blocks,searches=500)}
 
-## Two replicates of 272 treatments in a 16 x 34 design with nested row blocks
-treatments=factor(1:272)
+## Durban - 272 treatments in a 16 x 34 design with nested rows-and-columns
+data(durban) 
+durban=durban[c(3,1,2,4,5)]
+durban=durban[ do.call(order, durban), ]
+treatments=data.frame(gen=durban$gen)
 Reps = factor(rep(1:2,each=272))
 Rows = factor(rep(1:16,each=34))
 MainCols = factor(rep(rep(1:4,c(9,8,8,9)),16))
 SubCols = factor(rep(1:34,16))
 blocks = data.frame(Reps,Rows,MainCols,SubCols)
-\donttest{design(treatments,blocks,searches=1)$blocks_model}
+## D-efficiency factors assuming best design found by sequential optimization 
+\donttest{design(treatments,blocks,searches=5)$blocks_model}
 
 ## differential replication including single replicate treatments
 treatments=factor(c(rep(1:12,2), rep(13:24,1)))
@@ -151,7 +176,6 @@ Main=factor(rep(1:2,each=18))
 Sub =factor(rep(1:6,each=6))
 blocks =data.frame(Main,Sub)
 design(treatments,blocks,searches=5)
-
 
 ## Factorial treatment designs defined by a treatments data frame and a factorial model equation.
 
@@ -192,7 +216,7 @@ treatments=expand.grid( F1=factor(1:3), F2=factor(1:3), F3=factor(1:3), F4=facto
 F5=factor(1:3))
 blocks=factor(rep(1:3,each=27))
 treatments_model=" ~ (F1+F2+F3+F4+F5)^2"
- \donttest{design(treatments,blocks,treatments_model,searches=100)}
+ \donttest{design(treatments,blocks,treatments_model,searches=500)}
 
 # Second-order model for two qualitative and two quantitative level factors in 4 randomized blocks
 treatments=expand.grid(F1=factor(1:2),F2=factor(1:3),V1=1:3,V2=1:4)
@@ -205,12 +229,12 @@ GF=expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=fa
 F6=factor(1:2),F7=factor(1:2),F8=factor(1:2),F9=factor(1:2),F10=factor(1:2),F11=factor(1:2))
 blocks=factor(rep(1,12))
 model=model="~ F1+F2+F3+F4+F5+F6+F7+F8+F9+F10+F11"
-\donttest{design(GF,blocks,model)}
+\donttest{design(GF,blocks,model,searches=25)}
 
 }
 \references{
-Cochran W.G & Cox G.M (1957) Experimental Designs 2nd Edition John Wiley & sons
+Cochran W. G. & Cox G. M. (1957) Experimental Designs 2nd Edition John Wiley & Sons.
  
 Edmondson R. N. (1998). Trojan square and incomplete Trojan square designs for crop research. 
-Journal of Agricultural Science, Cambridge, 131, pp.135-142
+Journal of Agricultural Science, Cambridge, 131, pp.135-142.
 }

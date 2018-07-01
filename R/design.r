@@ -45,28 +45,30 @@
 #' This method of optimization allows the blocking factors to be fitted in order of importance with the 
 #' largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
 #' 
-#' Where a blocks design is fully nested, block effects are optimized sequentially with
-#' each added factor optimized by constrained pairwise swapping between blocks with the constraint that
-#' all previously added blocks factors remain unchanged. In practice, this requires that the levels of each successively added nested 
-#' \code{blocks} factor must be nested within the levels of all previously added factors so that each newly added factor can be  
-#' optimized recursively within the levels of all previously added factors.
+#' For nested block factors, the added block factors are optimized by constrained pairwise swapping between blocks within
+#'  the levels of all preceding factors.
 #' 
-#' Where a design has fully crossed block factors, the levels of each added crossed block factor will occur with all the 
-#' level of each previously added crossed factor which means that the main effects of an added crossed blocks factor can 
-#' be optimized by swapping treatments between the levels of the added factor while constrained within the levels of the
-#' previously added factors. Sometimes, however, the intersections of crossed block factors contain blocks of two or more plots
-#' and then it can be desirable to optimize the individual intersection blocks as well as optimizing the main factor effects 
-#' It is not feasible simply to swap treatments between intersection blocks as that would degrade the optimization of the
-#'  additive main effects design so, instead, the \code{design} algorithm provides an 
-#' option for optimizing a weighted combination of an additive crossed blocks information matrix for the additive crossed block
-#' effects and a multiplicative crossed blocks information matrix for the interaction block effects. 
+#' For crossed block factors, the added block factors have a complete set of block factor interaction effects
+#' in addition to the block factor main effects. Except for very special balanced designs, such as
+#' Trojan designs (Edmondson 1998), it is not normally possible to optimize both the additive and the multiplicative
+#' block effects simultaneously. The relative importance of the block main effects versus
+#' the block interaction effects is an important design consideration and for crossed blocks designs the \code{design} algorithm
+#' provides an option for optimizing a weighted combination of the additive crossed blocks model information matrix
+#' and the full multiplicative crossed blocks model information matrix. 
+#' Assuming w represents a weighting factor, the algorithm optimizes the following combined information matrix:
 #' 
-#' If the \code{weighting} factor is zero, the design is a fully additive crossed blocks model, if the \code{weighting} factor
-#'  is one the design is a fully multiplicative crossed blocks model while for any intermediate \code{weighting}, the design is a
-#' compromise between a fully additive and a fully multiplicative crossed blocks model. The default \code{weighting} factor is 0.5
-#' which seems to give a good compromise for most crossed blocks designs.
-#' If a design is fully nested, or if the intersection blocks of a crossed blocks design are single plots, the \code{weighting} factor 
-#' has no impact on the design algorithm. 
+#' Information(combined) = (1-w)*Information(additive) + w*Information(multiplicative) 
+#' 
+#' If the \code{weighting} factor is zero, the design is fully additive. If the \code{weighting} factor
+#' is one the design is fully multiplicative. For intermediate \code{weighting} factors, the design is a
+#' compromise between a fully additive and a fully multiplicative model. The default \code{weighting} factor is 0.5.
+#' 
+#' The \code{design} algorithm calculates the additive and the multiplicative blocks model information matrices
+#' assuming fixed block and treatments effects and if a fitted model is singular the blocks information matrix for that
+#' model is declared null. For example, the multiplicative blocks model for
+#' a v*v row-and-column design with a single plot in each row-by-column intersection will always be null because the
+#' number of intersection blocks plus the number of treatment effects will always exceed the available number of plot
+#' degrees of freedom.   
 #'  
 #' \code{treatments_model} is a design formula for the \code{treatments} factors based on the
 #' \code{models} formula of the \code{\link[stats]{model.matrix}} package. The default assumes
@@ -75,19 +77,16 @@
 #' The total number of design plots is defined by the length of the \code{blocks} factors, if present, 
 #' otherwise by the length of the \code{treatments} factors. 
 #' 
-
-#' The \code{blocks_model} output shows the overall achieved D-efficiency for each sequentially fitted blocks models. 
-#' For nested blocks, the \code{blocks_model} output shows the efficiency factors for each successively nested
-#' blocks design whereas for crossed blocks the \code{blocks_model} output shows the efficiency 
-#' factors for both the additive and, where available, for the multiplicative effects of each sequentially fitted crossed 
-#' blocks design. Comparison of the efficiency factors of the weighted crossed block designs using different weightings 
+#' The \code{blocks_model} output shows the overall achieved D-efficiency for each sequentially fitted blocks model. 
+#' Efficiency factors are shown for both the additive and for the multiplicative effects of each sequentially fitted
+#' model. For a fully nested blocks design, the two sets of efficiency factors will be equal but for a 
+#' generalized crossed block designs the two sets of efficiency factors will be different and 
 #' will provide guidance on the best choice of weighting for an efficient design. 
 #' 
-#' The efficiency factor used here is the ratio of the generalized variance of the full treatment design
-#' relative to the generalized variance of the optimized block and 
-#' treatment design. Using this definition, it is possible for quantitative level treatment designs to have efficiency 
-#' factors greater than one therefore the main use of efficiency factors is to compare different optimizations
-#' of the same design.  
+#' The definition of efficiency used by the \code{design} algorithm is the ratio of the generalized variance of the 
+#' full treatment design relative to the generalized variance of the optimized block and treatment design. 
+#' Using this definition, it is possible for quantitative level treatment designs to have efficiency factors greater
+#' than one therefore the main use of efficiency factors is to compare different optimizations of the same design.  
 #' 
 #' Outputs:
 #'
@@ -114,6 +113,9 @@
 #' @references
 #'
 #' Cochran W. G. & Cox G. M. (1957) Experimental Designs 2nd Edition John Wiley & Sons.
+#' 
+#' DURBAN, M., HACKETT, C., MCNICOL, J., NEWTON, A., THOMAS, W., & CURRIE, I. (2003). The practical use of semi-parametric models
+#'  in field trials, Journal of Agric. Biological and Envir. Stats., 8, 48-66.
 #'  
 #' Edmondson R. N. (1998). Trojan square and incomplete Trojan square designs for crop research. 
 #' Journal of Agricultural Science, Cambridge, 131, pp.135-142.
@@ -123,14 +125,24 @@
 #' ## For optimum results, the number of searches may need to be increased in practice.
 #' ## Designs should be rebuilt repeatedly to check that a near-optimum design has been found.  
 #' 
-#' ## 48 treatments in 2 replicate blocks of size 4 x 12 with 2 main rows and 3 main columns
+#' ## 3 replicates of 48 treatments with 3 replicate blocks of size 48, 
+#' ## 18 nested sub-blocks of size 8 (sub1), 36 nested sub-sub-blocks of
+#' ## size 4 (sub2) and 72 nested sub-sub-sub-blocks of size two (sub3)
+#' treatments=factor(1:48)
+#' reps=factor(rep(1:3,each=48))
+#' sub1=factor(rep(1:18,each=8))
+#' sub2=factor(rep(1:36,each=4))
+#' sub3=factor(rep(1:72,each=2))
+#' blocks=data.frame(reps,sub1,sub2,sub3)
+#' design(treatments,blocks,searches=1)
 #' 
+#' ## 48 treatments in 2 replicate blocks of size 4 x 12 with 2 main rows and 3 main columns
 #' treatments=factor(1:48)
 #' replicates=factor(rep(1:2,each=48))
 #' rows=factor(rep(rep(1:2,each=24),2))
 #' cols=factor(rep(rep(1:3,each=4),8))
 #' blocks=data.frame(replicates,rows,cols)
-#' design(treatments,blocks,searches=5)
+#' design(treatments,blocks,searches=1)
 #' 
 #' ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 #' treatments = factor(1:12)
@@ -165,11 +177,17 @@
 #' treatments=data.frame(gen=durban$gen)
 #' Reps = factor(rep(1:2,each=272))
 #' Rows = factor(rep(1:16,each=34))
-#' MainCols = factor(rep(rep(1:4,c(9,8,8,9)),16))
-#' SubCols = factor(rep(1:34,16))
-#' blocks = data.frame(Reps,Rows,MainCols,SubCols)
+#' Col1 = factor(rep(rep(1:4,c(9,8,8,9)),16))
+#' Col2 = factor(rep(rep(1:8,c(5,4,4,4,4,4,4,5)),16))
+#' Col3 = factor(rep(1:34,16))
+#' blocks = data.frame(Reps,Rows,Col1,Col2,Col3)
 #' ## D-efficiency factors assuming best design found by sequential optimization 
-#' \donttest{design(treatments,blocks,searches=5)$blocks_model}
+#' \donttest{
+#' ## Optimises the assumed post-blocked design
+#' design(treatments,blocks,searches=1)$blocks_model
+#' ## Finds post-blocked efficiency factors of the original design  
+#' blockEfficiencies(treatments,blocks)
+#' } 
 #' 
 #' ## differential replication including single replicate treatments
 #' treatments=factor(c(rep(1:12,2), rep(13:24,1)))
@@ -268,11 +286,11 @@
    # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB
    # 2*mtb+mtt+mbb > mtt + mbb + 2*(mtt*mbb)**.5 > 0 because mtb**2 > mtt*mbb
    # *******************************************************************************************************************
-   UpDate=function(VTT,VBB,VTB,t,b) {
-     VTTt=crossprod(VTT,t)
-     VBBb=crossprod(VBB,b)
-     VTBt=crossprod(VTB,t)
-     VTBb=crossprod(t(VTB),b)
+   UpDate=function(V,t,b) {
+     VTTt=crossprod(V[1:length(t),1:length(t),drop=FALSE],t)
+     VBBb=crossprod(V[(1+length(t)):ncol(V),(1+length(t)):ncol(V),drop=FALSE]  ,b)
+     VTBt=crossprod(V[1:length(t),(1+length(t)):ncol(V),drop=FALSE],t)
+     VTBb=crossprod(V[(1+length(t)):ncol(V),1:length(t),drop=FALSE],b)
      tMt=as.numeric(crossprod(t,VTTt))
      bMb=as.numeric(crossprod(b,VBBb))
      tMb=as.numeric(crossprod(b,VTBt))
@@ -283,76 +301,14 @@
      a=(tMt+bMb+2*tMb)/2
      b=(tMt+bMb-2*tMb)/2
      c=(bMb-tMt)/2
-     d=(1+a)*(1-b)+c*c
-     VTT=VTT- (tcrossprod(f1)*(1-b) - tcrossprod(g1)*(1+a) + (tcrossprod(g1,f1)+tcrossprod(f1,g1))*c)/d
-     VBB=VBB- (tcrossprod(f2)*(1-b) - tcrossprod(g2)*(1+a) + (tcrossprod(g2,f2)+tcrossprod(f2,g2))*c)/d
-     VTB=VTB- (tcrossprod(f1,f2)*(1-b) - tcrossprod(g1,g2)*(1+a) + (tcrossprod(g1,f2)+tcrossprod(f1,g2))*c)/d
-     list(VTT=VTT,VBB=VBB,VTB=VTB)
-   }
-   # *********************************************************************************************************************
-   #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
-   # due to swapping ith and jth treatments of a sample s of the set of plots 
-   # *********************************************************************************************************************
-   dMat=function(TM,BM,VTT,VBB,VTB,s) {
-     TMB=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),VTB)),t(BM[s,,drop=FALSE]))
-     TMT=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),VTT)),t(TM[s,,drop=FALSE]))
-     BMB=crossprod(t(crossprod(t(BM[s,,drop=FALSE]),VBB)),t(BM[s,,drop=FALSE]))
-     TMB=sweep(TMB,1,diag(TMB))
-     TMT=sweep(TMT,1,diag(TMT))
-     BMB=sweep(BMB,1,diag(BMB))
-     dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
-     return(dMat)
-   }
-   # ******************************************************************************************************************
-   # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
-   # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
-   # *******************************************************************************************************************
-   DMax=function(TF,TM,aVTT,aVBB,aVTB,addBM,mVTT,mVBB,mVTB,multBM,mainblocks,fullfact) {
-    locrelD=1
-    mainSets=tabulate(mainblocks)
-    nSamp=pmin(rep(8,nlevels(mainblocks)), mainSets)
-    repeat {
-      kmax=1
-      for (k in 1: nlevels(mainblocks)) {
-        s=sort(sample((1:nunits)[mainblocks==levels(mainblocks)[k]] , nSamp[k])) 
-        adMat=dMat(TM,addBM,aVTT,aVBB,aVTB,s)
-        adMat[adMat<1]=NA
-        if (fullfact) { 
-          mdMat=dMat(TM,multBM,mVTT,mVBB,mVTB,s)
-          mdMat[mdMat<1]=NA
-        }
-        if (fullfact & weighting<1)  dMat=(1-weighting)*adMat+weighting*mdMat
-        else if (fullfact) dMat=mdMat
-        else dMat=adMat
-        
-        z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
-        if (dMat[z[1],z[2]]>kmax) {
-          kmax=dMat[z[1],z[2]]
-          pi=s[z[1]]
-          pj=s[z[2]]
-        } 
-      }
-      if (kmax>(1+tol)) {
-        locrelD=locrelD*kmax
-        tdiff=TM[pi,]-TM[pj,]
-        adiff=addBM[pj,]-addBM[pi,]
-        aup=UpDate(aVTT,aVBB,aVTB,tdiff,adiff)
-        aVTT=aup$VTT
-        aVBB=aup$VBB
-        aVTB=aup$VTB
-        if (fullfact) {
-          mdiff=multBM[pj,]-multBM[pi,]
-          mup=UpDate(mVTT,mVBB,mVTB,tdiff,mdiff)
-          mVTT=mup$VTT
-          mVBB=mup$VBB
-          mVTB=mup$VTB
-        }
-        TM[c(pi,pj),]=TM[c(pj,pi),]
-        TF[c(pi,pj),]=TF[c(pj,pi),]
-      }  else if (sum(nSamp) == nunits) break
-      else nSamp=pmin(mainSets,2*nSamp)
-    }
-    list(aVTT=aVTT,aVBB=aVBB,aVTB=aVTB,mVTT=mVTT,mVBB=mVBB,mVTB=mVTB,locrelD=locrelD,TF=TF,TM=TM)
+     V[1:length(t),1:length(t)] = V[1:length(t),1:length(t), drop=FALSE]-
+       (tcrossprod(f1)*(1-b) - tcrossprod(g1)*(1+a) + (tcrossprod(g1,f1)+tcrossprod(f1,g1))*c)/((1+a)*(1-b)+c*c)
+     V[(1+length(t)):ncol(V),(1+length(t)):ncol(V)] = V[(1+length(t)):ncol(V),(1+length(t)):ncol(V),drop=FALSE]- 
+       (tcrossprod(f2)*(1-b) - tcrossprod(g2)*(1+a) + (tcrossprod(g2,f2)+tcrossprod(f2,g2))*c)/((1+a)*(1-b)+c*c)
+     V[1:length(t),(1+length(t)):ncol(V)] = V[1:length(t),(1+length(t)):ncol(V),drop=FALSE]-
+       (tcrossprod(f1,f2)*(1-b) - tcrossprod(g1,g2)*(1+a) + (tcrossprod(g1,f2)+tcrossprod(f1,g2))*c)/((1+a)*(1-b)+c*c)
+     V[(1+length(t)):ncol(V), 1:length(t)]= t(V[1:length(t),(1+length(t)):ncol(V),drop=FALSE])
+     return(V)
    }
   # ********************************************************************************************************************
   # Random swaps
@@ -389,113 +345,130 @@
         pivot=Q$pivot
       } else TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]
     }
-    return(list(TF=NULL,TM=NULL))
+    stop(" Unable to find an initial non-singular design for this choice of block design")
+  }
+  # *********************************************************************************************************************
+  #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
+  # due to swapping ith and jth treatments of a sample s of the set of plots 
+  # *********************************************************************************************************************
+  dMat=function(TM,BM,V,s,na) {
+    TMB=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),V[1:ncol(TM),(ncol(TM)+1):ncol(V), drop=FALSE])),t(BM[s,,drop=FALSE]))
+    TMT=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),V[1:ncol(TM),1:ncol(TM),drop=FALSE])),t(TM[s,,drop=FALSE]))
+    BMB=crossprod(t(crossprod(t(BM[s,,drop=FALSE]),V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE])),t(BM[s,,drop=FALSE]))
+    TMB=sweep(TMB,1,diag(TMB))
+    TMT=sweep(TMT,1,diag(TMT))
+    BMB=sweep(BMB,1,diag(BMB))
+    dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
+    if (na) dMat[dMat<1]=NA
+    return(dMat)
+  }
+  # ******************************************************************************************************************
+  # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
+  # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
+  # *******************************************************************************************************************
+  DMax=function(TF,TM,addBM,multBM,addV,multV,mainBlocks,fullMod,u) {
+    locrelD=1
+    mainSets=tabulate(mainBlocks[,u])
+    nSamp=pmin(rep(8,nlevels(mainBlocks[,u])), mainSets)
+    repeat {
+      kmax=1
+      for (k in 1: nlevels(mainBlocks[,u])) {
+        s=sort(sample((1:nunits)[mainBlocks[,u]==levels(mainBlocks[,u])[k]] , nSamp[k])) 
+        adMat=dMat(TM,addBM,addV,s,TRUE)
+        if (fullMod) mdMat=dMat(TM,multBM,multV,s,TRUE)
+        if (fullMod & weighting<1) dMat=(1-weighting)*adMat+weighting*mdMat
+        else if (fullMod) dMat=mdMat
+        else dMat=adMat
+        z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
+        if (dMat[z[1],z[2]]>kmax) {
+          kmax=dMat[z[1],z[2]]
+          pi=s[z[1]]
+          pj=s[z[2]]
+        } 
+      }
+      if (kmax>(1+tol)) {
+        locrelD=locrelD*kmax
+        addV=UpDate(addV,(TM[pi,]-TM[pj,]),(addBM[pj,]-addBM[pi,])  )
+        if (fullMod)
+          multV=UpDate(multV,(TM[pi,]-TM[pj,]),(multBM[pj,]-multBM[pi,]))
+        TM[c(pi,pj),]=TM[c(pj,pi),]
+        TF[c(pi,pj),]=TF[c(pj,pi),]
+      }  else if (sum(nSamp) == nunits) break
+      else nSamp=pmin(mainSets,2*nSamp)
+    }
+    list(addV=addV,multV=multV,locrelD=locrelD,TF=TF,TM=TM)
   }
   # ************************************************************************************************************************
   # Optimize the nested blocks assuming a possible set of Main block constraints Initial randomized starting design.
   # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
   # ************************************************************************************************************************
   blocksOpt=function(TF,TM,BF,searches,nunits) {
-  addblocks =lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")})
-  multblocks=lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})
-  multBF=BF
-  if (ncol(multBF)>1)
-  for (i in 2:ncol(multBF)) multBF[,i]= droplevels(interaction( multBF[,i-1],BF[,i] ))
-  colnames(multBF)=multblocks
-  multBF=cbind(mean=factor(rep(1,nrow(multBF))),multBF)
-  for (u in 1:ncol(BF)) {
-    addBM=scale(model.matrix(as.formula(paste("~",addblocks[[u]])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
-    Q=qr(addBM)
-    addBM = addBM[,Q$pivot[1:Q$rank],drop=FALSE]
-    addBM = qr.Q(qr(addBM)) # orthogonal basis
-    multBM=scale(model.matrix(as.formula(paste("~",multblocks[[u]])),multBF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
-    Q=qr(multBM)
-    multBM =multBM[,Q$pivot[1:Q$rank],drop=FALSE]
-    multBM = qr.Q(qr( multBM)) # orthogonal basis
-    if ( (ncol(TM)+ncol(addBM)) > nunits-1) stop("Additive block design has too many fixed effects for number of plots ")
-    fullfact=(weighting>0 & ncol(multBM)>ncol(addBM) & ncol(TM)+ncol(multBM)<nunits)
-    if (fullfact) NS=NonSingular(TF,TM,multBM,multBF[,u],searches) else NS=NonSingular(TF,TM,addBM,multBF[,u],searches)
-    if (is.null(NS$TM) | is.null(NS$TF)) stop(" Unable to find an initial non-singular design for this choice of block design")
-    TM=NS$TM
-    TF=NS$TF   
-    V=chol2inv(chol(crossprod(cbind(TM,addBM))))
-    aVTT = V[1:ncol(TM),1:ncol(TM),drop=FALSE]
-    aVBB = V[ (ncol(TM)+1):ncol(V) , (ncol(TM)+1):ncol(V),drop=FALSE]
-    aVTB = V[1:ncol(TM), (ncol(TM)+1):ncol(V), drop=FALSE]
-    if (fullfact) {
-      V=chol2inv(chol(crossprod(cbind(TM,multBM))))
-      mVTT = V[1:ncol(TM),1:ncol(TM),drop=FALSE]
-      mVBB = V[ (ncol(TM)+1):ncol(V) , (ncol(TM)+1):ncol(V),drop=FALSE]
-      mVTB = V[1:ncol(TM), (ncol(TM)+1):ncol(V), drop=FALSE]
-    } else {
-      mVTT=NULL
-      mVBB=NULL
-      mVTB=NULL
-    }
-    globrelD=0
-    relD=1
-    globTM=TM
-    globTF=TF
-    for (r in 1:searches) {
-      dmax=DMax(TF,TM,aVTT,aVBB,aVTB,addBM,mVTT,mVBB,mVTB,multBM,multBF[,u],fullfact)
-      if (dmax$locrelD>(1+tol)) {
-        relD=relD*dmax$locrelD
-        TM=dmax$TM
-        TF=dmax$TF
-        aVTT=dmax$aVTT
-        aVBB=dmax$aVBB
-        aVTB=dmax$aVTB
-        if (fullfact) {
-          mVTT=dmax$mVTT
-          mVBB=dmax$mVBB
-          mVTB=dmax$mVTB
+    addblocks =lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")})
+    multblocks=lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})
+    mainBlocks=as.data.frame(matrix(factor(rep(1,nrow(BF))),nrow=nrow(BF),ncol=(ncol(BF)+1)))
+    colnames(mainBlocks)=c("mean",multblocks)
+    for (i in 1: (ncol(mainBlocks)-1)) mainBlocks[,i+1]= droplevels(interaction( mainBlocks[,i],BF[,i] ))
+    for (u in 1:ncol(BF)) {
+      addBM=scale(model.matrix(as.formula(paste("~",addblocks[[u]])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
+      Q=qr(addBM)
+      addBM = addBM[,Q$pivot[1:Q$rank],drop=FALSE]
+      if ( (ncol(TM)+ncol(addBM)) > nunits-1) stop("Additive block design has too many fixed effects for number of plots ")
+      multBM=scale(model.matrix(as.formula(paste("~",multblocks[[u]])),mainBlocks), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
+      fullMod=(weighting>0 & ncol(multBM)>ncol(addBM) & ncol(TM)+ncol(multBM)<nunits)
+      if (fullMod) NS=NonSingular(TF,TM,multBM,mainBlocks[,u],searches) else NS=NonSingular(TF,TM,addBM,mainBlocks[,u],searches)
+      TM=NS$TM
+      TF=NS$TF   
+      addV=chol2inv(chol(crossprod(cbind(TM,addBM))))
+      if (fullMod) multV=chol2inv(chol(crossprod(cbind(TM,multBM)))) else  multV=NULL
+      globrelD=0
+      relD=1
+      globTM=TM
+      globTF=TF
+      for (r in 1:searches) {
+          dmax=DMax(TF,TM,addBM,multBM,addV,multV,mainBlocks,fullMod,u)
+        if (dmax$locrelD>(1+tol)) {
+          relD=relD*dmax$locrelD
+          TM=dmax$TM
+          TF=dmax$TF
+          addV=dmax$addV
+          multV=dmax$multV
+          if (relD>globrelD) {
+            globTM=TM 
+            globTF=TF 
+            globrelD=relD
+          }
         }
-        if (relD>globrelD) {
-          globTM=TM 
-          globTF=TF 
-          globrelD=relD
-        }
-      }
         if (r==searches) break
         for (iswap in 1:jumps) {
           counter=0
-            repeat {
-              counter=counter+1
-              s1=sample(seq_len(nunits),1)
-              available=!apply( sapply(1:ncol(TF),function(i) {TF[,i]==TF[s1,i]}),1,all)
-              z= seq_len(nunits)[multBF[,u]==multBF[s1,u] & BF[,u]!=BF[s1,u] & available]  
-              if (length(z)==0 & counter<501) next 
-              else if (length(z)==0 & counter>500) break
-              if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
-              aDswap=dMat(TM,addBM,aVTT,aVBB,aVTB,s)[2,1]
+          repeat {
+            counter=counter+1
+            s1=sample(seq_len(nunits),1)
+            available=!apply( sapply(1:ncol(TF),function(i) {TF[,i]==TF[s1,i]}),1,all)
+            z= seq_len(nunits)[mainBlocks[,u]==mainBlocks[s1,u] & mainBlocks[,u+1]!=mainBlocks[s1,u+1] & available]  
+            if (length(z)==0 & counter<501) next 
+            else if (length(z)==0 & counter>500) break
+            if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
+            if (fullMod) {
+              mDswap=dMat(TM,multBM,multV,s,FALSE)[2,1]
+              if (mDswap<tol & counter<501) next
+              else if (mDswap<tol & counter>500) break
+              Dswap=(1-weighting)*aDswap+weighting*mDswap
+            } else {
+              aDswap=dMat(TM,addBM,addV,s,FALSE)[2,1]
               if (aDswap<tol & counter<501) next
               else if (aDswap<tol & counter>500) break
-              if (fullfact) {
-                mDswap=dMat(TM,multBM,mVTT,mVBB,mVTB,s)[2,1]
-                if (mDswap<tol & counter<501) next
-                else if (mDswap<tol & counter>500) break
-                Dswap=(1-weighting)*aDswap+weighting*mDswap
-              } else Dswap=aDswap
-              break
+              Dswap=aDswap
             }
-            if (counter>500) break
-            relD=relD*Dswap 
-            tdiff = TM[s[1],]-TM[s[2],] 
-            adiff = addBM[s[2],]-addBM[s[1],]
-            up=UpDate(aVTT,aVBB,aVTB,tdiff,adiff)
-            aVTT=up$VTT
-            aVBB=up$VBB
-            aVTB=up$VTB
-            if (fullfact) { 
-              mdiff= multBM[s[2],]-multBM[s[1],]
-              up=UpDate(mVTT,mVBB,mVTB,tdiff,mdiff)
-              mVTT=up$VTT
-              mVBB=up$VBB
-              mVTB=up$VTB
-            }
+            break
+          }
+          if (counter>500) break
+          relD=relD*Dswap 
+          addV=UpDate(addV,(TM[s[1],]-TM[s[2],]),(addBM[s[2],]-addBM[s[1],]))
+          if (fullMod) multV=UpDate(multV,(TM[s[1],]-TM[s[2],]),(multBM[s[2],]-multBM[s[1],]))
           TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]  
           TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),]  
-          } #jumps
+        } #jumps
       } #searches
       TM=globTM
       TF=globTF 

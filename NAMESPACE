@@ -3,7 +3,6 @@
 export(blockEfficiencies)
 export(blocks)
 export(design)
-export(factblocks)
 export(upper_bounds)
 importFrom(crossdes,MOLS)
 importFrom(lme4,lmer)

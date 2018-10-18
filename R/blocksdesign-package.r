@@ -3,8 +3,8 @@
 #' @aliases blocksdesign
 #' @docType package
 #' 
-#' @description The \code{blocksdesign} package provides functionality for the construction of nested or crossed block designs for general linear model
-#' treatment designs.
+#' @description The \code{blocksdesign} package provides functionality for the construction of multi-level nested or crossed block designs
+#'  for any feasible combination of  qualitative or quantitative level treatment factors.
 #'  
 #' @details
 #' 
@@ -28,29 +28,30 @@
 #' set of blocks. The analysis of incomplete block designs is complex but the availability of modern computers and modern software, for example the R mixed model
 #' software package \code{lme4} (Bates et. al. 2014), makes the analysis of any feasible nested block designs with any depth of nesting practicable. 
 #' 
-#' Currently, the \code{blocksdesign} package has two main block design functions:
+#' The \code{blocksdesign} function has two main design functions:  
 #' 
-#' i) \code{\link[blocksdesign]{blocks}}: This function generates block designs for any arbitrary number of unstructured treatments where each
-#'   treatment can have any arbitrary number of replicates. The function generates arbitrary nested block designs with arbitrary depth of nesting 
-#'  where each successive set of blocks is optimized within the levels of each preceding set of blocks using conditional D-optimality. 
-#'  Special block designs such as lattice designs or latin or Trojan square designs are constructed algebraically. 
+#'i) \code{\link[blocksdesign]{design}}
+#'  
+#'  This function provides general block designs for unstructured treatment sets or for factorial treatment sets with qualitative or quantitative 
+#'  level treatment factors.
+#'  The function finds a D-optimal or near D-optimal treatment design of the required size, possibly a simple 
+#'  unstructured treatment set, and then finds a D-optimal or near D-optimal block design for that treatment design.
+#'  The \code{design} algorithm builds the blocks design by sequentially adding
+#'  \code{blocks} factors where each added block factor is optimized conditional on all the previously added block factors. Sequential optimization allows the
+#'   blocking factors to be fitted in order of importance with the largest and most important blocks fitted first and the smaller and less important
+#'   blocks fitted subsequently. If there are no defined bock factors, the algorithm assumes a completely randomised treatment design
+#'  The output from \code{design} includes a data frame of the block and treatment factors for each plot and a table showing the achieved D-efficiency 
+#'  factors for each set of nested or crossed blocks. Fractional factorial efficiency factors based on
+#'  the generalized variance of the complete factorial design are also shown (see the \code{design} documentation for details) 
+#' 
+#' ii) \code{\link[blocksdesign]{blocks}}
+#' 
+#' This function generates arbitrary nested block designs for unstructured treatment sets where it can be assumed that all block sizes at any particular
+#' level of nesting are all as near equal as possible. Special block designs such as lattice designs or latin or Trojan square designs are constructed algebraically. 
 #'  The outputs from the \code{blocks} function include a data frame showing the allocation of treatments to blocks for each plot of the design and a 
 #'  table showing the achieved D- and A-efficiency factors for each set of nested blocks together with A-efficiency upper bounds, where available. 
 #'  A plan showing the allocation of treatments to blocks in the bottom level of the design is also included in the output.
 #' 
-#' ii) \code{\link[blocksdesign]{design}}: This function generates general block designs for unstructured or general qualitative or quantitative
-#'  factorial treatment sets. The function first finds a D-optimal or near D-optimal treatment design of the required size, possibly a simple 
-#'  unstructured treatment set. The function then finds a D-optimal or near D-optimal block design for that treatment design based on a set of 
-#'  defined block factors, if present. The \code{design} algorithm builds the blocks design by sequentially adding
-#'  \code{blocks} factors and each block factor is optimized conditional on all previous block factors. Sequential optimization allows the
-#'   blocking factors to be fitted in order of importance with the largest and most important blocks fitted first and the smaller and less important
-#'   blocks fitted subsequently. If there are no defined bock factors, the algorithm assumes a completely randomised treatment design
-#'   
-#'  The output from \code{design} includes a data frame of the block and treatment factors for each plot and a table showing the achieved D-efficiency 
-#'  factors for each set of nested or crossed blocks. Fractional factorial efficiency factors based on
-#'  the generalized variance of the complete factorial design are also shown (see the \code{design} documentation for details) 
-#'
-#' Further discussion of designs with multi-level blocks strata can be found in the package vignette at: vignette("blocksdesign")
 #' 
 #' @references
 #' 

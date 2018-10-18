@@ -1,7 +1,7 @@
 ---
 title: "Block designs for sequential block factors"
 author: "R. N. Edmondson"
-date: "2018-06-26"
+date: "2018-06-02"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Block designs for sequential block factors}
@@ -12,24 +12,21 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.width=6, fig.height=4) 
 knitr::opts_chunk$set(echo = FALSE)
-
 ```
 
 ## Introduction
 
-Comparative experiments in agriculture and biology often involve the estimation of treatment effects against a background of high non-treatment variability. Effective control of background variability is essential for good treatment estimation and the most common method of control is the block design. The aim of good block design is to group experimental units into homogeneous blocks where the precision of comparison within blocks is expected to be greater than the precision of comparison between blocks. Good block design should maximize the treatment information estimated within blocks and should minimize the treatment information confounded between blocks.
+Comparative experiments in agriculture and biology usually involve the estimation of treatment effects against a background of high non-treatment variability. Effective control of background variability is essential for good treatment estimation and the most common method of control is the block design. The aim of good block design is to group experimental units into homogeneous blocks where the precision of comparison within blocks is expected to be greater than the precision of comparison between blocks. Good block design should maximize the treatment information estimated within blocks and should minimize the treatment information confounded between blocks.
 
-The most basic type of block design is the complete randomized blocks design where every treatment occurs in every block in proportion to its replication. The treatment replication need not be equal for all treatments but all treatments in the same block need to occur in some fixed proportion relative to their replication. Complete randomized blocks provide full efficiency on all treatment comparisons and are the designs of choice for experiments with a small number of treatments. However, because every block must contain every treatment at least once, complete randomized blocks may be too large to give good within-block homogeneity of variance. In that situation, sub-division into smaller, more homogeneous incomplete blocks may be necessary to provide improved precision of estimation, especially for large field crop trials with many treatments.
+The most basic type of block design is the complete randomized blocks design where every treatment occurs in every block in proportion to its replication. The treatment replication need not be equal for all treatments but all treatments in the same block need to occur in some fixed proportion relative to their replication. Complete randomized blocks provide full efficiency on all treatment comparisons and are the designs of choice for experiments with a small number of treatments. However, because every block must contain every treatment, complete randomized blocks may be too large to give good within-block homogeneity of variance. In that situation, sub-division into smaller, more homogeneous incomplete blocks may be necessary to provide improved precision of estimation, especially for large field crop trials with many treatments.
 
-Sometimes it can be assumed that two or more mutually orthogonal sets of crossed blocks will give improved control of nuisance effects. For example, in field trials it is sometimes assumed that a row-and column blocks design will provide for the control of mutually orthogonal trend effects running along rows and running along columns respectively. However, this is a very strong assumption and may well be unrealistic especially in large field trials where patterns of variability may not fit a simple additive row-and-column model. 
+Sometimes it can be assumed that two or more mutually orthogonal sets of crossed blocks such as the rows and the columns of a field trial will give improved control of nuisance effects. Often it is assumed that crossed block factors are mutually independent and that the block design can be chosen to minimize treatment information confounded both between the row blocks and between the column blocks independently. However, this is a very strong assumption and may well be unrealistic especially in large field trials where patterns of variability may not fit a simple additive row-and-column model. 
 
-Prior to the development of modern statistical software, the statistical analysis of experiments was a major constraint on the complexity of a design. Nowadays, modern software such as the R packages 'lme4' (Bates et al 2015) and lmerTest' (Kuznetsova et al 2017) will allow efficient analysis of virtually any experimental design no matter how complex. Block designs have been extensively researched but often the emphasis has been to fit a relatively simple design for a pre-conceived blocks model. The modern paradigm for empirical model building is to fit model  terms in order of importance until no further improvement in fit is possible judged against a suitable measure of model fit such as the Akaike information criterion (AIC) or the Bayesian information criterion (BIC). Empirical model building is commonly applied to treatment effects but there is no reason why the same approach should not be used for block effects. The aim of the 'blocksdesign' package is to provide a design of sufficient generality to ensure that the unknown 'true' block structure of an experiment to be effectively modelled at the analysis stage by empirical model fitting methods.  
+Prior to the development of modern statistical software, the statistical analysis of experiments was a major constraint on the complexity of a design. Nowadays, modern software such as the R packages 'lme4' (Bates et al 2015) and lmerTest' (Kuznetsova et al 2017) will allow efficient analysis of virtually any experimental design no matter how complex. Block designs have been extensively researched but often the emphasis has been to fit a relatively simple design for a pre-conceived blocks model. The modern paradigm for empirical model building is to add model terms until no further improvement in fit is possible judged against a suitable measure of model fit such as the Akaike information criterion (AIC) or the Bayesian information criterion (BIC). Empirical model building is commonly applied to treatment effects but there is no reason why the same approach should not be used for block effects. The aim of the 'blocksdesign' package is to provide a design of sufficient generality to ensure that the unknown 'true' block structure of an experiment to be effectively modelled at the analysis stage by empirical model fitting methods.  
 
 ## Block sizes
 
-A single set of complete replicate blocks will almost always improve the efficiency of an experiment but, for medium or large size experiments, further sub-division into smaller nested sub-blocks is often beneficial and designs with a single level of nesting are widely used in agricultural research. An important study on the effects of block size on precision of estimation of treatments effects in large field trials was undertaken by Patterson and Hunter (1983). They reviewed 244 cereal variety trials arranged in generalized incomplete block designs and found that the mean improvement in yield efficiency due to the incomplete blocks was 1.43 relative to complete randomized blocks. Results varied greatly from one trial to another, however, and the distribution of efficiencies was positively skewed across the set of trials. Precision was more than doubled in one tenth of the trials and in another tenth the lattice arrangement had little effect on accuracy. Nevertheless, in half the trials the efficiency of blocking was 1.23 or more. They also modelled the background field variability of 166 of the trials assuming an empirical exponential variance function. 
-
-Letting 2*phi(x) represent the estimated variance of the difference between two plots separated by a distance x, they calculated the semi-variance $phi(x)$ that best fitted the observed variances of the 166 trials to be:
+A single set of complete replicate blocks will almost always improve the efficiency of an experiment but, for medium or large size experiments, further sub-division into smaller nested sub-blocks is often beneficial and resolvable incomplete block designs with a single level of nesting are widely used in agricultural research. An important study on the effects of block size on precision of estimation of treatments effects in large field trials was undertaken by Patterson and Hunter (1983). They reviewed 244 cereal variety trials arranged in generalized incomplete block designs and found that the mean improvement in yield efficiency due to the incomplete blocks was 1.43 relative to complete randomized blocks. Results varied greatly from one trial to another, however, and the distribution of efficiencies was positively skewed across the set of trials. Precision was more than doubled in one tenth of the trials and in another tenth the lattice arrangement had little effect on accuracy. Nevertheless, in half the trials the efficiency was 1.23 or more. They also modelled the background field variability of 166 of the trials assuming an empirical exponential variance function. Letting 2*phi(x) represent the estimated variance of the difference between two plots separated by a distance x, they calculated the semi-variance $phi(x)$ that best fitted the observed variances of the 166 trials to be:
 
  $$phi(x) = 0.209 (1 - 0.7250*942^{x})$$
 
@@ -37,9 +34,9 @@ They then considered example designs for 48 varieties in three replicate blocks 
 
 ## Multi-level nesting
 
-The Patterson & Hunter (1983) study compared different block sizes assuming block designs with a single level of nesting and a single nested block size. However, with multi-level nesting it is feasible to have a range of different block sizes in the same design so there is no reason why a design should be restricted to a single size of nested block. In particular, with a nested multi-stratum block design it is possible to include blocks of both size 8 and size 4 in the same design thus spanning the range of block sizes considered by Patterson & Hunter (1983). Modern methods of analysis allow for routine analysis of designs with multi-level nesting and we will examine a single design with three levels of nesting and three block sizes in the same design.
+The Patterson & Hunter (1983) study compared different block sizes assuming different block designs each with a single level of nesting and a single nested block size. However, with multi-level nesting it is feasible to have a range of different block sizes in the same design so there is no reason why a design should be restricted to a single size of nested block. In particular, with a nested multi-stratum block design it is possible to include blocks of both size 8 and size 4 in the same design thus spanning the range of block sizes considered by Patterson & Hunter (1983). Modern methods of analysis allow for routine analysis of designs with multi-level nesting and we will examine a single design with three levels of nesting and three block sizes in the same design.
 
-Assume a design for 3 replicates of 48 treatments with three complete replicate blocks of size 48, 18 nested sub-blocks of size eight, 36 nested sub-sub-blocks of size four and 72 nested sub-sub-sub-blocks of size two. The first example in the 'blocksdesign::design' function shows how the  'blocksdesign' package (Edmondson 2017) can be used to fit a block design of this size and the following table shows the efficiency factors of the design (extracted by using the $\$blocks\_model$ extractor):
+Assume a design for 3 replicates of 48 treatments with three complete replicate blocks of size 48, six nested blocks of size eight in each complete replicate block, two nested blocks of size four in each block of size eight and two nested blocks of size two in each block of size four. The 'blocksdesign' package (Edmondson 2017) can be used to fit a block design of this size by first fitting a set of three complete replicate blocks ($reps$), then fitting six blocks of size eight ($sub1$) nested within each replicate block, then fitting two blocks of size four ($sub2$) nested within each block of size eight and then finally fitting two blocks of size two ($sub3$) nested within each block of size four. Note that for nested block designs, the separate nested blocks must each have a unique block level.
 
 ```{r}
 
@@ -50,122 +47,127 @@ a4=c("reps+sub1+sub2+sub3", 71, 0.4113)
 add=data.frame(rbind(a1,a2,a3,a4))
 colnames(add)=c("Additive model","DF","Efficiency")
 rownames(add)=NULL
-knitr::kable(add, caption = "Table 1. Efficiency factors for nested blocks model")
+knitr::kable(add, caption = "Efficiency factors for nested blocks model")
 
 ```
 
-The D-efficiencies of the four block sizes from the top stratum downwards were estimated to be 1, 0.877, 0.7275 and 0.4113. By comparison, the D-efficiencies of the same four block sizes from separate designs with a single nested level (not shown) were estimated to be: 1, 0.877, 0.7281 and 0.4118. Thus the efficiencies of the multi-level nested design were very slightly reduced for the third and fourth levels relative to a single-level nested block design of comparable block size. However, these reductions were very small and of no practical importance for real experimental designs. In our experience, the effect of repeated nesting on the efficiency of nested block designs is generally negligible although we have not made any formal study of this effect. 
+The efficiency factors of the design can be extracted by using the $\$blocks\_model$ extractor and the D-efficiencies of the four block sizes from the top stratum downwards were estimated to be 1, 0.877, 0.7275 and 0.4113. By comparison, the D-efficiencies of the same four block sizes from separate designs with a single nested level (not shown) were estimated to be: 1, 0.877, 0.7281 and 0.4118. The efficiencies were very slightly reduced in the third and fourth levels of the multi-level nested design relative to a single-level nested design with comparable block size but the reductions were very small and of no practical consequence. In our experience, the effect of repeated nesting on the efficiency of nested block designs is generally negligible although we have not made any formal study of this effect. 
+NB the $\$blocks\_model$ extractor provides efficiency factors for both an 'Additive_model' and a 'Multiplicative_model' but the 'Multiplicative_model' efficiency factors are intended to provide additional information about designs with crossed block factors and for fully nested block designs there should be no difference between the 'Additive_model' and the 'Multiplicative_model' efficiency factors.
 
-NB the $\$blocks\_model$ extractor provides efficiency factors for both an 'Additive_model' and a 'Multiplicative_model'. The 'Multiplicative_model' efficiency factors are intended to provide efficiency factors for individual blocks in designs with crossed block factors: for fully nested block designs, there should be no difference between the two models.
+## Simulated multi-level nesting
 
-## Multi-level nesting: simulations
+The efficiency of the multi-stratum example design discussed above was examined numerically by using 1000 simulated data sets based on the Patterson and Hunter (1983) $phi(x)$ function. The following four mixed models were fitted to each simulated data set using the ‘lmer’ function of the ‘lme4’ package (Bates et al. 2014):
 
-The efficiencies of the multi-stratum example design discussed above were examined numerically by using 1000 simulated data sets based on the Patterson and Hunter (1983) $phi(x)$ function. The following four mixed models were fitted to each simulated data set using the ‘lmer’ function of the ‘lme4’ package (Bates et al. 2014):
+1. A complete randomized blocks design with 3 complete main blocks of size 48
+2. As above but with an additional set of 6 blocks of size 8 nested in each main block
+3. As above but with an additional set of 2 blocks of size 4 nested in each block of size 8
+4. As above but with an additional set of 2 blocks of size 2 nested in each block of size 4
 
-1. A single-level nested blocks design with 3 replicate blocks of size 48 and 18 sub-blocks of size 8 nested within replicate blocks.
-2. A single-level nested blocks design with 3 replicate blocks of size 48 and 36 blocks of size 4 nested within replicate blocks.
-3. A multi-level nested blocks design with 3 replicate blocks of size 48, 18 sub-blocks of size eight and 36 sub-sub-blocks of size four.
-4. A multi-level nested blocks design with 3 replicate blocks of size 48, 18 sub-blocks of size eight, 36 sub-sub-blocks of size four and 72 sub-sub-sub-blocks of size 2.
-
-All four models were fitted by maximum likelihood and for each simulation the Chi-square difference in fit between models 2 and 3, between models 1 and 3 and between models 3 and 4 was calculated. Maximum likelihood models with nested random effects and the same fixed effects can be compared by a Chi-square deviance test and Fig 1 shows the Chi-square deviances for model 2 versus model 3, Fig 2 shows the Chi-square deviances for model 1 versus model 3 and Fig 3 shows the Chi-square deviances for model 4 versus model 3. In 'lme4', variance components are constrained to be positive so the model is non-standard and the probability levels of the deviances do not follow the usual Chi-square distribution with 1 d.f (Stram & Lee 1994). Instead, Dr. Hans-Peter Piepho, (University of Hohenheim; personal communication) recommends that significance tests should be implemented by halving the p-value of the standard Chi-square test on 1 d.f. Hence, the critical 5% test statistic for the deviance will be the 10% Chi-square critical value which is 2.706 on 1 d.f with a similar derivation for other critical p-values.
+All four models were fitted by maximum likelihood and for each simulation the Chi-square difference in fit between models 1 and 2,between models 2 and 3 and between models 3 and 4 each based on a single degree of freedom was calculated.  Maximum likelihood models with nested random effects and the same fixed effects can be compared by a Chi-square deviance test and Figs 1-3 show histograms of the Chi-square differences between models 1 and 2, between models 2 and 3 and between models 3 and 4, respectively, based on the same 1000 simulations. Each comparison differs by a single level of nesting therefore the Chi-square deviances for each comparison has a single degree of freedom. However, because the variance components are constrained to be positive, the model is non-standard (Stram & Lee 1994) and the probability levels of the deviances do not follow the usual Chi-square distribution with 1 d.f. Instead, Dr. Hans-Peter Piepho, (University of Hohenheim; personal communication) recommends that significance tests should be implemented by halving the p-value of the standard Chi-square test on 1 d.f. Hence, the critical 5% test statistic for the deviance will be the 10% Chi-square critical value which is 2.706 on 1 d.f with a similar derivation for other critical p-values.
 
 
 ```{r, echo=FALSE}
-
 Hist1=vector("list", 6)
 class(Hist1)="histogram"
-Hist1$breaks=c( 0,  5, 10, 15, 20, 25, 30, 35)
-Hist1$counts=c( 330, 320, 195,  96,  44,  13,   2)
-Hist1$density=c(0.0660, 0.0640, 0.0390, 0.0192, 0.0088, 0.0026, 0.0004)
-Hist1$mids=c( 2.5,  7.5, 12.5, 17.5, 22.5, 27.5, 32.5)
+Hist1$breaks=c(0,  20,  40,  60,  80, 100, 120, 140, 160)
+Hist1$counts=c(148, 313, 283, 168,  64,  18,   4,   2)
+Hist1$density=c(0.00740, 0.01565, 0.01415, 0.00840, 0.00320, 0.00090, 0.00020, 0.00010)
+Hist1$mids=c(10,  30,  50,  70,  90, 110, 130, 150)
 Hist1$xname="ChiSq difference"
 Hist1$equidist="TRUE"
-plot(Hist1, main="Fig 1. Blocks of size 8 fitted after blocks of size 4")
+plot(Hist1, main="Fig 1. One level of nesting versus complete blocks ")
 
 Hist2=vector("list", 6)
 class(Hist2)="histogram"
-Hist2$breaks=c( 0,  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
-Hist2$counts=c(483, 240, 140,  66,  36,  20,   8,   5,   0,   1,   1)
-Hist2$density=c(0.0966, 0.0480, 0.0280, 0.0132, 0.0072, 0.0040, 0.0016, 0.0010, 0.0000, 0.0002, 0.0002)
-Hist2$mids=c( 2.5,  7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5, 52.5)
+Hist2$breaks=c(0,  5, 10, 15, 20, 25, 30, 35, 40, 45)
+Hist2$counts=c(508, 215, 116,  87,  36,  23,  10,   4,   1)
+Hist2$density=c(0.1016, 0.0430, 0.0232, 0.0174, 0.0072, 0.0046, 0.0020, 0.0008, 0.0002)
+Hist2$mids=c(2.5,  7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5)
 Hist2$xname="ChiSq difference"
 Hist2$equidist="TRUE"
-plot(Hist2, main="Fig 2. Blocks of size 4 fitted after blocks of size 8 ")
+plot(Hist2, main="Fig 2. Two levels of nesting versus one level ")
 
 Hist3=vector("list", 6)
 class(Hist3)="histogram"
-Hist3$breaks=c( 0,  5, 10, 15, 20, 25, 30, 35, 40)
-Hist3$counts=c( 756, 125,  69,  21,  14,  11,   3,   1)
-Hist3$density3=c(0.1512, 0.0250, 0.0138, 0.0042, 0.0028, 0.0022, 0.0006, 0.0002)
-Hist3$mids=c(2.5,  7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5)
+Hist3$breaks=c(0,  5, 10, 15, 20, 25, 30, 35, 40, 45)
+Hist3$counts=c( 751, 136,  58,  26,  13,   7,   4,   4,   1)
+Hist3$density3=c(0.1502, 0.0272, 0.0116, 0.0052, 0.0026, 0.0014, 0.0008, 0.0008, 0.0002)
+Hist3$mids=c(2.5,  7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5)
 Hist3$xname="ChiSq difference"
 Hist3$equidist="TRUE"
-plot(Hist3,  main="Fig 3. Blocks of size 2 fitted after blocks of size 4 and 8")
+plot(Hist3,  main="Fig 3. Three levels of nesting versus two levels")
 
 ```
 
-Fig 1 shows the effects of adding large blocks of size 8 after fitting the medium blocks of size 4 and shows that for almost 40% of the simulations the large blocks gave a large improvement in model fit (Chi-square>10) over-and-above the effects of the medium blocks.
+Fig 1 shows that a single set of nested blocks of size eight gave a very significant improvement in model fit for the great majority of the simulated data sets (95% of simulations with Chi-square >10). Fig 2 shows that for almost half of the simulations, a second set of blocks of size four nested within each block of size eight gave a further large improvement in model fit (Chi-square>10) additional to the improvement in fit already achieved by the blocks of size eight. Finally, Fig. 3 shows that for approximately 25% of the simulations a third set of blocks of size two nested within each block of size four gave a significant and useful improvement in model fit additional to the improvement in fit already achieved by the first two sets of nested blocks. In summary, these results show that for large field experiments with spatial semi-variance function given by  $phi(x)$ multi-level nesting can provide a substantial improvement in model fit of block effects compared with a single level of nesting.
 
-Fig 2 shows the effects of adding medium blocks of size 4 after fitting the large blocks of size 8 and shows that for about 25% of the simulations the medium blocks gave a large improvement in model fit (Chi-square>10) over-and-above the effects of the large blocks.
+## Crossed blocks designs 
 
-Fig 3 shows the effects of adding small blocks of size 2 after fitting both large blocks of size 8 and medium blocks of size 4. In most of the simulations, the extra improvement in model fit due to the small blocks was small (Chi-square<5) but for a few simulations there was a substantial improvement in model fit (Chi-square>10).
+Where an experiment has two or more independent sources of background variability such as the rows and columns of a field crop trial, it can be desirable to accommodate both sources of variability simultaneously using a design with crossed block factors. The simplest crossed blocks design is a Latin square which is a $v*v$ row-and-column design for v replicates of v treatments. Each treatment occurs once in each row and once in each column and each row-by-column intersection contains a single plot. The rows and the columns provide two sets of mutually orthogonal blocks for the control of two separate independent sources of background variability and Latin squares have proved useful in a wide range of subject disciplines. However, Latin squares require as many replications as there are treatments and they quickly become impracticable as the number of treatments increases. 
 
-In summary, these results show that for large field experiments with spatial semi-variance function given by  $phi(x)$, multi-level nesting can provide a substantial improvement in model fit compared with a single level of nesting. Multi-level nesting can control variability over a range of scales of measurement by providing a range of block sizes that are nested within the same design. Multi-level nesting automatically spans a range of block sizes therefore the issue of finding a single 'optimum' block size is redundant.   
+Latin squares can be generalized by relaxing the constraint that each row and each column must contain a complete set of treatments or by relaxing the constraint that each row and each column must intersect in a single plot. The first generalization allows classical row-and-column type designs with incomplete row blocks or incomplete column blocks while the second allows designs with incomplete blocks of treatments nested in individual row-by-column intersection. Examples of the first type of generalization are incomplete Latin squares (discussed in Cochran and Cox 1957) while examples of the second type are semi-Latin squares (discussed by Preece & Freeman 1983). An example of a row-and-column design that includes both types of generalization simultaneously is the incomplete Trojan square (Edmondson 1998).
 
-## Crossed blocks
-
-When an experiment has two or more independent sources of background variability, such as the rows and columns of a field crop trial, it can be advantageous to accommodate both sources of variability simultaneously using a crossed blocks design. The simplest crossed blocks design is a Latin square which has v replicates of v treatments arranged in v rows and v columns with a complete treatment replicate in each row and a complete treatment replicate in each column. There are v\*v treatment plots and v\*v row-by-column intersections therefore each row-by-column intersection contains a single plot. Latin squares have proven useful in a wide range of disciplines but, because Latin squares require as many replications as there are treatments, they quickly become impracticable as the number of treatments increases. 
-
-Latin squares can be generalized either by relaxing the constraint that each row and each column contain a complete set of treatments or by relaxing the constraint that each row and each column intersect in a single plot. The first generalization allows designs where each row or each column is an incomplete block while the second generalization allows designs where each row-by-column intersection is an incomplete block. Examples of the first type are incomplete Latin squares (discussed in Cochran and Cox 1957) while examples of the second type are semi-Latin squares (discussed by Preece & Freeman 1983). An example of a row-and-column design that includes both types of generalization simultaneously is the incomplete Trojan square (Edmondson 1998).
-
-A full analysis of a generalized crossed blocks design requires a full mixed model type analysis with a full factorial analysis of the crossed block effects. However, for designs with a single plot in each crossed blocks intersection, the crossed blocks interaction effect is confounded with the treatments effects and for these designs only the crossed blocks main effects are estimable. For designs with multiple plots in each row-by-column intersection, it may be possible to separate the crossed block interaction effects from the treatment effects and for these designs the crossed block factor interactions can be estimated and fitted in the usual way.  
+The analysis of a generalized Latin square normally requires a mixed model type analysis. A full analysis of a generalized crossed blocks design requires a factorial analysis of the crossed block effects with an additive main effect for each crossed blocks factor, a 2-factor interaction for each pair of crossed blocks factors and so on for all possible higher-order crossed block interactions. Crossed blocks with a single plot in each crossed block intersection confound crossed block interactions with treatment effects and for these designs only the crossed blocks main effects are estimable. However, for crossed blocks with multiple plots in each intersection, the crossed block interactions can be estimated separately from the treatment effects and for these designs the block factor interactions can be estimated and included in the fitted model in the usual way.  
 
 ## Crossed blocks: a literature example 
 
-Durban et. al. (2003) examined data from an experiment with two replicates of 272 spring barley varieties arranged in an array of 34 beds (east-west) and 16 rows (north-south). The experiment was designed as a row-and-column design with 16 rows and 34 columns subject to the constraint that rows 1-8 contained one complete set of treatment replicates whilst rows 9-16 contained the other set. Thus the original analysis of the block design had two fixed replicate block effects with 16 random row and 34 random column effects.
+Durban et. al. (2003) examined data from an experiment with two replicates of 272 spring barley varieties arranged in an array of 34 beds (east-west) and 16 rows (north-south). The experiment was designed as a row-and-column design with 16 rows and 34 columns subject to the constraint that rows 1-8 contained one complete set of treatment replicates while rows 9-16 contained the other set. Thus the original analysis of the block design had two fixed replicate block effects with 16 row and 34 column effects. 
 
-The assumptions underlying a standard analysis of a row-and-column design are that row and column effects are additive and that, after allowing for treatment and additive row and column effects, the residual plot variances will be homogeneous with a flat correlation structure. Durban et. al. (2003) showed that even after fitting a full mixed model for rows, columns and replicate block effects, the genotype adjusted plot residuals for this data set were far from homogeneous. This shows that a simple additive row-and-column analysis was far from adequate for this experiment. 
+The assumptions underlying the analysis of this type of row-and-column design are that row and column effects are additive and that the residual variances after allowing for treatment and additive block effects are homogeneous. Durban et. al. (2003) showed, however, that after fitting the additive effects of rows, columns and replicates to the barley variety trial data, the residual plot variances were far from homogeneous. 
 
-Durban et. al. (2003) fitted a semi-parametric loess smoothing model (Hastie 2017) to the genotype adjusted plot residuals of the original row-and-column block analysis. In this vignette, we will use 'post-blocking' to show that a block model based on a generalized row-and-column design with a range of block sizes and block structures can explain virtually all the positional variation in this data set.
+To improve the basic row-and-column analysis, Durban et. al. (2003) considered fitting a semi-parametric model for loess smoothing (Hastie 2017) of local trend effects within individual row blocks. An alternative approach can be based on a multi-level crossed block design and in the following discussion, we use 'post-blocking' to show how the variety trial data can be explained by fitting a generalized row-and-column block structure. We then show how 'blocksdesign' can be used to construct generalized crossed block design that can accommodate a wide range of possible crossed block effects. 
 
-## Crossed blocks: post-blocking
+## Crossed blocks: multi-level analysis
 
-The original row-and-column design had 16 beds and 34 columns which gave a design with very long rows (beds). Simple additivity over a large number of plots in a field trial is unrealistic therefore we examine a post-blocked design with a hierarchy of nested column block sizes that allow for the estimation of row-by-column block interaction effects. A maximal partition of the column blocks gives a hierarchy of two, four, eight, 16 and 34 nested column blocks. However, a partition with only two nested column blocks is not useful because it is not realistic to estimate a blocks variance for only two blocks. Furthermore, a partition with 16 column blocks was found to be not useful because the mixed model failed to converge with 16 random column blocks. Therefore, for the purposes of this study, we will consider a hierarchy of 4, 8 and 34 column blocks only. Four blocks is rather few for estimating a random block effects model but as the overall model gave satisfactory convergence a partition including only four column blocks seems justified. As 4 and 8 are not exact divisors of 34, the column block sizes cannot be exactly equal and we use a set of four large column blocks, Col1, of widths 9,8,8,9, a set of eight medium column blocks, Col2, of widths 5,4,4,4,4,4,4,5 and a set of 34 column blocks, Col3, of width one. The two complete replicate blocks were fitted as fixed effects.    
-
-## Crossed blocks: choice of model
-
-Model selection proceeded by fitting a sequence of block models in some assumed order and by retaining only those effects that explained a significant amount of variability. There is no obvious assumed order for fitting for the three sets of column blocks Col1, Col2, Col3 but it can be assumed that if a factorial interaction effect is included in any particular model then the main effects marginal to that interaction effect must also be included (Nelder 1977). Using this constraint, Table 2 tests the fit of the various nested column block effects by comparing model 'goodness of fit' statistics for various models obtained by dropping column block terms from a fully saturated model (line 1 of the table). These models were fitted by the lme4 package using maximum likelihood and the change in goodness of fit was assessed by the change in the AIC (or BIC) statistic relative to the full model where the smaller the AIC (or BIC) the better the fit of the model. 
+In the following analysis, we partition the 34 columns of the variety trial data into a hierarchy of nested column blocks to provide better positional control of trends within rows. A maximal partition fits a hierarchy of two, four, eight, 16 and 34 nested column blocks but for this study we consider a partition into just three sizes of column blocks, a set of four large column blocks, $Col1$, of widths 9,8,8,9, a set of eight medium column blocks, $Col2$, of widths 5,4,4,4,4,4,4,5 and a set of 34 column blocks, $Col3$ each of width one. We first add the replicate block effects and then the row effects nested within replicates and then add the column blocks in decreasing size order from largest to smallest. For each size of column block, we first add the main effects of the column blocks and then, for the column blocks with width greater than one, we add the row-by-column interaction effects for that set of column blocks.  
 
 ```{r, echo=FALSE}
-a= c("Reps + Rows + Col1 + Rows:Col1 + Col2 + Rows:Col2 + Col3", 280.9, 1484, 139.6, -279.1, 264)
-b= c("Reps + Rows + Col1 + Col2 + Rows:Col2 + Col3", 285.8, 1485, 136.1, -272.2, 265)
-c= c("Reps + Rows + Col2 + Rows:Col2 + Col3", 284.5, 1479, 135.7, -271.4, 266)
-d= c("Reps + Rows + Col1 + Rows:Col1 + Col2 + Col3", 302.6, 1502, 127.7, -255.4, 265) 
-e= c("Reps + Rows + Col1 + Rows:Col1 + Col3", 305.9, 1501,  125.0, -250.0,  266)
-f = c("Reps + Rows + Col1 + Rows:Col1 + Col2 + Rows:Col2",361.2, 1560, 98.4, -196.8, 265)
-add=data.frame(rbind(a,b,c,d,e,f))
-colnames(add)=c("Blocks Model", "AIC", "BIC", "logL","dev","df" )
-rownames(add)=NULL
-knitr::kable(add, caption = "Table 2. Goodness of fit of column block model terms")
+
+m0=c("(1 | Reps) + (1 | Rows)")
+m1=c("(1 | Reps) + (1 | Rows) + (1 | Col1)")
+m2=c("(1 | Reps) + (1 | Rows) + (1 | Col1) + (1 | Rows:Col1)")
+m3=c("(1 | Reps) + (1 | Rows) + (1 | Col1) + (1 | Rows:Col1) + (1 | Col2)")
+m4=c("(1 | Reps) + (1 | Rows) + (1 | Col1) + (1 | Rows:Col1) + (1 | Col2) + (1 | Rows:Col2)")
+m5=c("(1 | Reps) + (1 | Rows) + (1 | Col1) + (1 | Rows:Col1) + (1 | Col2) + (1 | Rows:Col2) + (1 | Col3)")
+mod=data.frame(rbind(m0,m1,m2,m3,m4,m5))
+colnames(mod)=c("Block model terms")
+rownames(mod)=NULL
+knitr::kable(mod, caption = "Sequentially fitted block model terms")
 
 ```
 
-Line 2 of the table shows the effect of omitting the Rows:Col1 interaction effect from the fully saturated model while line 3 shows the effect of omitting both the Rows:Col1 interaction effect and the Col1 main effect simultaneously. There was little change in the AIC or the BIC statistic in either case which shows that the Col1 block factor had little effect on the overall fit of the design and can be omitted completely without any significant loss of precision of estimation.  
+The models are fitted by the lme4 package using maximum likelihood and the improvement in fit due to each added column effect is assessed by comparing the model fit of each model with its preceding model using the various goodness of fit tests supplied by an $anova()$ of the complete set of models taken in order of fitting.
 
-Line 4 shows the effect of omitting the Rows:Col2 interaction effect from the fully saturated model while Line 5 shows the effect of omitting both the Rows:Col2 interaction effect and the Col2 main effect simultaneously. There was a substantial increase in the AIC and the BIC statistic in both cases which shows that both the Cols2 main effects and the Rows:Col2 block interaction effects are important for a good model fit.
+```{r, echo=FALSE}
 
-Line 6 shows the effects of omitting Col3 from the fully saturated model and the large increase in both the AIC and the BIC statistics shows that the Col3 main effects are important for model goodness of fit even after including all other column block terms. There is no estimate of the Rows:Cols3 interaction effects because these effects are fully confounded with the treatment effects.
+a1=c(0, 275, 584.32, 1766.5, -17.161,   34.322, " ", " ", " ")
+a2=c(1, 276, 476.77, 1663.3,  37.615,  -75.230, 109.5521,      1,  "< 2.2e-16 ***")
+a3=c(2, 277, 429.72, 1620.5,  62.138, -124.276,  49.0459,      1,  "2.500e-12 ***")
+a4=c(3, 278, 366.40, 1561.5,  94.801, -189.601,  65.3248,      1,  "6.352e-16 ***")
+a5=c(4, 279, 363.16, 1562.6,  97.420, -194.841,   5.2397,      1,  "0.02208 *" )
+a6=c(5, 280, 282.81, 1486.5, 138.593, -277.187,  82.3458,      1,  "< 2.2e-16 ***")
+add=data.frame(rbind(a1,a2,a3,a4,a5,a6))
+colnames(add)=c("Model", "Df",    "AIC",    "BIC",  "logLik", "deviance",    "Chisq", "Chi Df", "Pr(>Chisq)" )
+rownames(add)=NULL
+knitr::kable(add, caption = "Improvement in model fit due to each added block effect")
 
-In summary, the best fitting model is shown on line 3 of Table 2 and includes the main effects of Col2 and Col3 and the Rows:Col2 interaction but omits all effects due to Col1.
+```
 
-## Crossed blocks: graphical analysis
+The maximum likelihood comparisons for the successively fitted column blocks show the effects of each sequentially added column block together with the respective row-by-column block interaction effects. The column blocks are added in descending order of size and the base model, Model 0, is the model with replicate block effects and complete row block effects but no fitted column block effects.
 
-Durban et al. (2003) examined trends within rows by using coplots (Cleveland 1993) of genotype yield residuals plotted against bed position for each row individually. Fig 4 shows coplots of the REML residuals from the  original row-and-column blocks model and Fig 5 shows coplots of the REML residuals from the best fitting model from Table 2 (line 3). 
+1. Model 1 tests the effects of the large sized column blocks and shows a very large improvement in model fit compared with the base model.
+2. Model 2 tests the effects of the interactions between the large sized column blocks and the row blocks and shows a very large improvement in model fit compared with Model 1.
+3. Model 3 tests the effects of the medium sized column blocks and shows a very large improvement in model fit compared with Model 2.
+4. Model 4 tests the effects of the interactions between the medium sized column blocks and the row blocks and shows a significant but very small improvement in model fit compared with Model 3.  
+5. Model 5 tests the effects of the smallest sized column blocks of width one and shows a very large improvement in model fit compared with Model 4.
 
+Based on these results, the best fitting model for the observed data includes the additive effects of the three sizes of column blocks $Col1$, $Col2$ and $Col3$ plus the interaction between the $Col1$ blocks and the row blocks. The interaction between the $Col1$ blocks and the row blocks shows that the column blocks of sizes 9,8,8,9 are not simply additive and this means that the model requires separate block effects for each nested row block in the $Col1$ stratum. The $Col2$ and $Col3$ column blocks are nested within the $Col1$ column blocks and simple additive row-and-column blocks are adequate for the $Col2$ and $Col3$ blocks nested within the $Col1$ blocks. The overall fitted model relaxes the strong assumption that the row and column effects must be additive over the full 34 beds width of the trial. The large interaction effect between the $Col1$ blocks and the row blocks shows that at the scale of the $Col1$ blocks, the assumption of additive row and column effects is invalid.   
 
-```{r message=FALSE, echo=FALSE}
-require(blocksdesign)
-require(lme4)
+The goodness of fit of the original row-and-column model versus the best fitting row-and-column model is shown in Figures 4 and 5, respectively, where the block and treatment adjusted REML residuals of the original row-and-column analysis and the best fitting multi-level analysis are plotted against column position for each of the 16 rows of the experiment. Visual inspection shows that the original row-and-column analysis (Fig 4) fails to provide a good model fit whereas the best fitting multi-level analysis (Fig 5) provides an excellent model fit.
+
+```{r, echo=FALSE}
+library(blocksdesign)
+library(lme4)
 data(durban) 
 durban=durban[c(3,1,2,4,5)]
 # re-orders in plot order
@@ -175,30 +177,26 @@ Rows = factor(rep(1:16,each=34))
 Col1 = factor(rep(rep(1:4,c(9,8,8,9)),16))
 Col2 = factor(rep(rep(1:8,c(5,4,4,4,4,4,4,5)),16))
 Col3 = factor(rep(1:34,16))
-Model1 = lmer(yield ~ gen + Reps + (1|Rows) + (1|Col3), durban)
-Model2 = lmer(yield~  gen + Reps + (1|Rows) + (1|Col2) + (1|Rows:Col2) + (1|Col3) ,durban)
+Model1= lmer(yield ~ gen + (1|Reps) + (1|Rows) + (1|Col3), durban)
+Model2= lmer(yield ~ gen + (1|Reps) + (1|Rows)  + (1|Col1)  + (1|Rows:Col1) + (1|Col2) + (1|Col3), durban)
 ylim=.6
 coplot(resid(Model1)~bed|factor(row), data=durban, cex=.5,ylim=c(-ylim, ylim),ylab="Residuals",
        panel=function(x,y,...) panel.smooth(x,y,span=.75,col.smooth = "black",...))
-title("Fig 4. Original row-and-column blocks model")
+title("Fig 4. Original row-and-column model")
 coplot(resid(Model2)~bed|factor(row), data=durban, cex=.5,ylim=c(-ylim, ylim),ylab="Residuals",
        panel=function(x,y,...) panel.smooth(x,y,span=.75,col.smooth = "black",...))
-title("Fig 5. Best fitting multi-level blocks model")
-
+title("Fig 5. Best fitting row-and-column model")
 ```
 
-Comparison of the residual plots of the original row-and-column analysis (Fig 4) with the residual plots of the best multi-level crossed-blocks analysis (Fig 5) shows that the post-blocked design gave a much improved model fit. Fig 4 shows strong evidence of residual within-row trend effects whereas Fig 5 shows very little evidence of any residual within-row trend effects.
+## Construction of generalized crossed block designs
 
-The residual error variance of the original row-and-column analysis (Fig 4) was 0.0724 whereas the residual error variance of the best multi-level crossed-blocks analysis (Fig 5) was 0.0510. This shows a very substantial improvement of 1.42 in the precision of estimation of treatment effects due to the additional block constraints of the multi-level crossed-blocks analysis.
+The post-blocked analysis of the spring barley variety trial shows that, for large field trials, a complex multi-level block analysis can substantially improve the precision of estimation of treatment effects. However, the original design of the trial assumed a simple conventional row-and column blocks design with 16 row blocks and 34 column blocks together with the constraint that one replicate was allocated to rows 1-8 and the second to rows 9-16. In practice, this means that the block structures used for the design are not fully efficient for the assumed post-blocked analysis.
 
+As the assumption that rows and columns blocks are additive is not necessarily valid, it is usually desirable, where possible, to construct a design that is efficient both for the additive effects and for the interaction effects of the crossed block factors. However, except for certain special designs such as Trojan designs, it is not usually possible to optimize both the additive and the interaction effects of crossed block factors simultaneously.
 
-## Generalized crossed blocks designs
-
-The post-blocked analysis of the spring barley variety trial shows that, for large field trials, a multi-level block analysis can substantially improve the precision of estimation of treatment effects. As the assumption that row and columns blocks are additive may not be fully valid, it is usually desirable, where possible, to construct designs that are efficient both for crossed block additive effects and for crossed-block interaction effects. However, except for certain special designs such as Trojan designs, it is usually not possible to optimize both the additive effects and the interaction effects of crossed block factors simultaneously. The 'blocksdesign' package adopts a compromise approach by optimizing a weighted combination of the additive block effects information matrix and the multiplicative block effects information matrix. The weighting factor w can vary between 0 and 1 inclusively where a weight of zero give a fully additive crossed blocks model, a weight of 1 gives a fully multiplicative crossed blocks model and an intermediate weighting gives a weighted combination of the two models:
-$$ Information(combined) = (1-w)*Information(additive) + w*Information(multiplicative) $$ 
-The default weighting is 0.5.     
+Instead, the 'blocksdesign' package adopts a compromise approach by optimizing a weighted combination of an additive block effects information matrix and a multiplicative effects information matrix. If the weighting factor is set to zero, the design is optimized for additive effects only, whereas if the weighting factor is set to one, the design is optimized for the full multiplicative model. Intermediate weighting gives a compromise optimization that includes all the block factor effects in the optimization but with more importance attached to the additive effects when the weighting factor is small and more importance attached to the interaction effects when the weighting factor is large. The default weighting is 0.5.     
  
-The following tables show additive and multiplicative blocks efficiency factors for hierarchically nested column block designs for the spring barley variety trial assuming weights of 0, 0.5 or 1. 
+The following 'blocksdesign' output shows the compromise post-blocked analysis of the barley variety trial with default weighting equal to 0.5. The design efficiency factors are extracted using the formula  $\$blocks\_model$ and for each design the efficiency factors show both the additive block effects and, where available, the multiplicative block interaction effects. 
 
 ```{r, echo=FALSE}
 a1=c("Reps",  1,       1 ,1, 1)
@@ -221,25 +219,19 @@ knitr::kable(add, caption = "Efficiency factors for additive effects of crossed 
 knitr::kable(mult, caption = "Efficiency factors for multiplicative effects of crossed blocks model")
 ```
 
-The efficiency factors for the compromise design should show additive efficiency factors close to those found for the fully additive design and multiplicative efficiency factors close to those found for the fully multiplicative design. Comparison of the sets of efficiency factors for the three designs does, indeed, show that the compromise design is almost as efficient as the fully additive design for additive block effects and almost as efficient as the fully multiplicative design for multiplicative block effects. We can therefore conclude that a weighted design with a suitable weighting factor will provide a design that is robust for different assumptions about the fitted crossed blocks model at the analysis stage.   
-
-Code for the above design is included in the examples code for the $blocksdesign::design$ function. Code for the efficiency factors of the post-blocked design based on the actual design used in the experiment is also included (not shown here).
+The efficiency factors for the compromise design (weighting = 0.5) should show additive efficiency factors close to those found for the fully additive design (weighting = 0) and multiplicative efficiency factors close to those found for the fully multiplicative design (weighting = 1). Comparison of the sets of efficiency factors for the three designs does, indeed, show that the compromise design is almost as efficient as the fully additive design for additive block effects and almost as efficient as the fully multiplicative design for multiplicative block effects. We can therefore conclude that a weighted design with a suitable weighting factor will provide a design that is robust for different assumptions about the fitted crossed blocks model at the analysis stage.   
 
 ## Discussion
 
-The advantages of simplicity, flexibility and robustness mean that block designs are the designs of choice for most agricultural experiments. Wherever possible, replicated experiments should be divided into complete replicate blocks and the complete replicate blocks should be used to account for sources of non-treatment differences between the experimental units. For example, with large experiments, cultural operations such as planting or harvesting might occur over several days and it is often useful to use the main blocks as management units so that all cultural operations on the same replicate block are carried out on the same day (Bailey 2008 Chapter 4). Sometimes the physical constraints of an experiment mean that the natural block size does not coincide with the size of a replicate block in which case the main blocks cannot be complete treatment replicates. In that situation, the best option is to allocate treatments to main blocks in such a way that the efficiency of the main block design is maximized (see Bailey 2008 Chapter 11).
+The advantages of simplicity, flexibility and robustness mean that block designs are the designs of choice for most agricultural experiments. Wherever possible, replicated experiments should be divided into complete replicate blocks and the complete replicate blocks should be used to account for large natural or non-treatment differences between the experimental units. For example, with large experiments cultural operations such as planting or harvesting that might occur over several days it is often useful to use the main blocks as management units so that all cultural operations on the same replicate block are carried out on the same day (Bailey 2008 Chapter 4). Sometimes the physical constraints of an experiment mean that the natural block size does not coincide with the size of a replicate block in which case the main blocks cannot be complete treatment replicates. In that situation, the best option is to allocate treatments to main blocks in such a way that the efficiency of the main block design is maximized (see Bailey 2008 Chapter 11).
 
-The Patterson & Hunter (1983) paper examined the effects of different block sizes on the efficiency of resolvable nested block designs assuming an empirical exponential variance function for the correlations between plots within replicate blocks. They assumed a design with 3 replicates of 48 treatments and examined the efficiency of nested blocks of size 8, 6 or 4, using different resolvable nested block design for each block size. In this vignette, the Patterson & Hunter (1983) example has been generalized by simulating the efficiencies of recursively nested blocks of size 8 and 4 in the same hierarchically nested block design and it has been shown that including two or more nested block sizes in the same design can give substantial improvement in precision relative to a design including either block size separately. The range of block sizes could be further extended by nesting an additional set of blocks to give blocks of size 2 in the bottom stratum of the design but that option will not be further explored here.
+The Patterson & Hunter (1983) paper examined the effects of different block sizes on the efficiency of resolvable nested block designs assuming an empirical exponential variance function for the correlations between plots within replicate blocks. They assumed a design with 3 replicates of 48 treatments and examined the efficiency of nested blocks of size 8 6 or 4, using different resolvable nested block design for each block size. In this vignette, the Patterson & Hunter (1983) example has been generalized by simulating the efficiencies of recursively nested blocks of size 8 and 4 in the same nested block design. The range of block sizes could be further extended by nesting an additional set of blocks to give blocks of size 2 in the bottom stratum of the design but that option will not be further explored here.
 
 The trials assessed in the Patterson & Hunter (1983) paper were cereal trials mostly with long thin plots arranged side by side. This arrangement is convenient for one-dimensional blocking and most of the trials in the Patterson and Hunter study had one-dimensional blocks. Plots that are more nearly square are less easily blocked in one-dimension and may require two-dimensional blocks. Often, simple nested blocks are quite adequate for two-dimensional blocking provided that the blocks are as compact as possible in both dimensions.
 
-The Durban et al. (2003) paper re-examined the analysis of an experiment for two replicates of 272 spring barley genotypes with 16 rows crossed with 34 beds and found that the original row-and-column type analysis was inadequate. Even after removing the additive effects of the rows and the beds, significant trends between beds within rows remained. As an alternative to the original analysis, they showed that a semi-parametric spatial model gave a significant reduction in the residual variability and improved the estimation of treatment effects. In our study, we assumed a post-blocked design and substitute the original single set of 34 column blocks by a hierarchy of nested column blocks with up to three levels of nesting.
+The reason that the additive row-and-column analysis was so unsuccessful for the spring barley experiment in Durban et. al. (2003) is because, as shown in the maximum likelihood analysis of the various possible fitted models, there was a very large and significant interaction between the column blocks and the row blocks that was not properly accounted for in the original row-and-column analysis. After fitting a suitable interaction term between the column blocks and the row blocks, the resulting multi-level analysis gave an excellent fit to the observed data. 
 
-Fig 4 shows coplots of the residuals from the original rows-and-beds design while Fig 5 show coplots of the residuals from the best hierarchically nested blocks design with two levels of nesting. Fig 4 shows large trends in the individual rows whereas Figs 5 show that rows are effectively trend free. The main reason that the additive row-and-column analysis was so unsuccessful is because, as shown in the maximum likelihood analysis of the various possible fitted models, there was a large and significant interaction between column blocks and row blocks that was not properly accommodated in the original row-and-column analysis. After fitting a suitable columns-by-rows interaction term, the resulting multi-level analysis gave an excellent fit to the observed data. 
-
-Although not discussed in this vignette, we also examined the fit of the spring barley data using generalized additive models (Wood 2017) from the gamm4 package (Wood & Scheipl 2017). In general, we found that the fit of the GAM models was less good than the fit of the block models although further development of the GAM analysis might improve the fit of the GAM model. We note that the post-blocked model fitted to the barley trial data was not optimized for the assumed block design therefore we would expect that the model fit of the hierarchical block design would be improved still further if the design was properly optimized as discussed in the examples for the $blocksdesign::design$ function. We would also expect that a design optimized for a multi-level nested blocks analysis would also be efficient for a GAM model although this conjecture needs further confirmation.   
-
-The outstanding problem in the design and analysis of hierarchical multi-level block models is the issue of model selection. Muller et al. (2013) give an excellent review of model selection for linear mixed models at the analysis stage but the problem of model selection at the design stage involves different issues. Selection of a suitable blocks model at the design stage is critical for enabling the selection of a suitable blocks model at the analysis stage. The risks of selection bias and model over-fitting are well known and further work on the right balance between efficiency of estimation and the risk of over-fitting of nested block designs would be valuable.  
+The outstanding problem in the design and analysis of complex multi-level block models is the issue of model selection. Muller et al. (2013) give an excellent review of model selection for linear mixed models at the analysis stage but the problem of model selection at the design stage involves different issues. Selection of a suitable blocks model at the design stage is critical for enabling the selection of a suitable blocks model at the analysis stage. The risks of selection bias and model over-fitting are well known and further work on the right balance between efficiency of estimation and the risk of over-fitting of nested block designs would be valuable.  
 
 Acknowledgement: I would like to thank Prof. Dr. Hans-Peter Piepho of the University of Hohenheim for much useful advice and encouragement to publish this paper.
 
@@ -251,8 +243,6 @@ BAILEY, R.A. (2008). Design of Comparative Experiments (Cambridge Series in Stat
 
 BATES D., MAECHLER M., BOLKER B., WALKER S. (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48. \doi:10.18637/jss.v067.i01.
 
-BOLKER, B (and others) (2018), GLMM FAQ http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#should-i-treat-factor-xxx-as-fixed-or-random 19:51 08 June 2018
-
 COCHRAN, W. G. & COX, G. M. (1957). Experimental designs 2nd edition New York: Wiley.
 
 COOK, R. D. & NACHTSHEIM, C. J. (1980). A comparison of algorithms for constructing exact D-optimal designs, Technometrics, 22, 315-324.
@@ -263,11 +253,9 @@ EDMONDSON, R. N. (1998). Trojan square and incomplete Trojan square designs for 
 
 EDMONDSON. R. N. (2018). blocksdesign: Nested and Crossed Block Designs for Factorial, Fractional Factorial and Unstructured Treatment Sets. R package version 2.8.
 
-KUZNETSOVA A, BROCHOFF PB & CHRISTENSEN RHB (2017). “lmerTest Package: Tests in Linear Mixed Effects Models.” _Journal of Statistical Software_, *82*(13), pp. 1-26. \doi:10.18637/jss.v082.i13 (URL: http://doi.org/10.18637/jss.v082.i13).
+Kuznetsova A, Brockhoff PB and Christensen RHB (2017). “lmerTest Package: Tests in Linear Mixed Effects Models.” _Journal of Statistical Software_, *82*(13), pp. 1-26. \doi: 10.18637/jss.v082.i13 (URL: http://doi.org/10.18637/jss.v082.i13).
 
 MULLER, S., SCEALY, J. L. & WELSH, A. H. (2013). Model Selection in Linear Mixed Models, Statistical Science, 28, 135–167 
-
-NELDER, J. A. (1977). "A Reformulation of Linear Models". Journal of the Royal Statistical Society. 140 (1): 48–77. \doi:10.2307/2344517. (Section 2.1: The Neglect of Marginality)
 
 PATTERSON H.D. & HUNTER, E.A. (1983). The efficiency of incomplete block designs in National List and Recommended List cereal variety trials. J. Agric. Sci. Camb.,101, 427-433.
 
@@ -280,6 +268,8 @@ R Core Team (2018). R: A language and environment for statistical computing. R F
 WOOD, S. N. (2017). Generalized Additive Models: An Introduction with R, 2nd Edition, Chapman & Hall/CRC Texts in Statistical Science.
 
 WOOD, S. N. & SCHEIPL, F. (2017). gamm4: Generalized Additive Mixed Models using 'mgcv' and 'lme4'. R package version 0.2-5.https://CRAN.R-project.org/package=gamm4
+
+WRIGHT, K. (2015). agridat: Agricultural Datasets. R package version1.12. https://CRAN.R-project.org/package=agridat
 
 
 

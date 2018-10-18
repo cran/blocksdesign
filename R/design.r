@@ -1,92 +1,81 @@
 #' @title General block and treatment designs.
 #'
 #' @description
-#' Constructs D-optimal block and treatment designs for feasible combinations of nested or crossed block 
-#' factors and feasible linear treatment models.   
+#' Constructs block and treatment designs for any feasible combination of nested or crossed block 
+#' factors and any feasible combination of  qualitative or quantitative level treatment factors.   
 #' 
 #' @param treatments a single treatment factor or a data frame containing one or more qualitative or 
-#' quantitative (numeric) level treatment factors.  
+#' quantitative level treatment factors.  
 #' 
 #' @param blocks a single blocks factor or a data frame containing one or more qualitative level block
 #' factors in the required order of fitting.
 #' 
-#' @param treatments_model a model formula for the required treatments design where the default 
-#' formula assumes a fully crossed factorial treatment model.
+#' @param treatments_model a model formula for the treatments design. 
 #' 
-#' @param weighting a weighting factor between 0 and 1 for a weighted combination of additive 
-#' model and multiplicative model block factor effects.  
+#' @param weighting a weighting factor between 0 and 1 for the relative importance of the
+#' block factor interaction effects versus the block factor main effects for a crossed blocks factor design. 
 #'
-#' @param seed an integer initializing the random number generator. The default is a random
-#' integer seed.
+#' @param seed an integer initializing the random number generator. 
 #'
 #' @param searches the maximum number of local optima searched at each stage of a
-#'  design optimization. The default depends on the design size.
+#'  design optimization
 #'
 #' @param jumps the number of pairwise random treatment swaps used to escape a local maxima. 
-#' The default is a single swap.
 #'
 #' @details
 #' 
-#' \code{treatments} is a treatments factor or a data frame of two or more qualitative or quantitative
-#' level treatment factors. The \code{treatments} object should contain all the required treatments or treatment
-#' combinations but must not exceed the total number of design plots defined by the
-#' blocks parameter (see \code{blocks} below). The \code{treatments} object is replicated in the ratio of the 
-#' total number of design plots to the total number of treatment plots where the integer part of the ratio, 
-#' possibly zero, defines the number of complete replications of the \code{treatments} object while the fractional 
-#' part of the ratio, possibly zero, defines a sample fraction of that size drawn from the complete set of 
-#' \code{treatments} plots. Samples are drawn without replacement and are chosen to optimize the D-optimality
-#' of the \code{treatments_model}. 
+#' \code{treatments} is a factor or a data frame for one or more qualitative or quantitative
+#' level treatment factors. The \code{treatments} object is the candidate set of treatments or treatment
+#' factor combinations from which the treatment design is selected and should include
+#' all the possible feasible treatment combinations that could or should be included in the final design. 
 #' 
-#' \code{blocks} is an optional blocks factor or a data frame of two or more qualitative block factors
-#' with a default equal to a single complete block of size equal to the number of \code{treatments} plots. 
-#' The \code{design} algorithm fits the blocks design by sequentially adding \code{blocks} factors
-#' in the column order of the \code{blocks} data frame. Each block factor is optimized  
-#' conditionally assuming all preceding block factors are fixed but ignoring all succeeding block factors.
-#' This method of optimization allows the blocking factors to be fitted in order of importance with the 
-#' largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
+#' \code{blocks} is a factor or data frame for one or more qualitative block factors where the length or number of rows
+#' of \code{blocks} is the number of plots in the design. If the design is a completely randomized design, 
+#' the \code{blocks} object should be a blocks factor of the required length but with only a single factor level.
 #' 
-#' For nested block factors, the added block factors are optimized by constrained pairwise swapping between blocks within
-#'  the levels of all preceding factors.
+#' The ratio of the length of the \code{blocks} object to the length of the \code{treatments} object is the replication 
+#' number and he integer part of the replication number, if any, defines the number of complete replications of the
+#' \code{treatments} object while the fractional part, if any, defines a sample fraction of that size drawn from the
+#' candidate set of \code{treatments} combinations.
 #' 
-#' For crossed block factors, the added block factors have a complete set of block factor interaction effects
-#' in addition to the block factor main effects. Except for very special balanced designs, such as
-#' Trojan designs (Edmondson 1998), it is not normally possible to optimize both the additive and the multiplicative
-#' block effects simultaneously. The relative importance of the block main effects versus
-#' the block interaction effects is an important design consideration and for crossed blocks designs the \code{design} algorithm
-#' provides an option for optimizing a weighted combination of the additive crossed blocks model information matrix
-#' and the full multiplicative crossed blocks model information matrix. 
-#' Assuming w represents a weighting factor, the algorithm optimizes the following combined information matrix:
+#' The blocks design can comprise any ordered set of crossed or nested block factors provided only that the
+#' nested blocks are arranged in a hierarchical order of nesting from largest to smallest. 
+#' The block factors are added in sequence and each successively added blocks factor is optimised by maximising 
+#' the current blocks model but with all the previously added blocks factors held constant.
 #' 
-#' Information(combined) = (1-w)*Information(additive) + w*Information(multiplicative) 
+#' N.B. crossed block designs can fail due to inherent aliasing. For example, \code{blocksdesign}
+#' will always try to fit orthogonal row and column block effects which means that a row-and-column
+#' design with two rows, two columns and two treatment replicates will automatically confound one treatment contrast
+#' with the rows-by-columns interaction effect, which means that a full second-order block design will always be singular. 
 #' 
-#' If the \code{weighting} factor is zero, the design is fully additive. If the \code{weighting} factor
-#' is one the design is fully multiplicative. For intermediate \code{weighting} factors, the design is a
-#' compromise between a fully additive and a fully multiplicative model. The default \code{weighting} factor is 0.5.
+#' \code{treatments_model} is a design formula for the \code{treatments} model based on the
+#' \code{models} formula of the \code{\link[stats]{model.matrix}} package. The model fits factorial treatment contrasts
+#' for qualitative level factors and polynomial treatment contrastst for quantitative level factors. The  default treatment
+#' model assumes fully crossed factor effects for qualitative level factors and first-order effects for for quantitative 
+#' level factors.
 #' 
-#' The \code{design} algorithm calculates the additive and the multiplicative blocks model information matrices
-#' assuming fixed block and treatments effects and if a fitted model is singular the blocks information matrix for that
-#' model is declared null. For example, the multiplicative blocks model for
-#' a v*v row-and-column design with a single plot in each row-by-column intersection will always be null because the
-#' number of intersection blocks plus the number of treatment effects will always exceed the available number of plot
-#' degrees of freedom.   
-#'  
-#' \code{treatments_model} is a design formula for the \code{treatments} factors based on the
-#' \code{models} formula of the \code{\link[stats]{model.matrix}} package. The default assumes
-#'  a complete factorial design.
+#' \code{weighting} is a weighting parameter between 0 and 1 which differentially weights the higher-order effects of
+#' a crossed blocks design relative to the the first-order effects.
+#' Designs with crossed blocks are usually assumed to fit an additive main block effects model but this is a very
+#' strong assumption and wherever possible, crossed blocks designs should allow for higher-order interaction
+#' effects. Setting the weighting parameter between 0 and 1 gives increasing importance to the higher-order 
+#' effects in a blocks model relative to the first-order effects as the weighting increases from 0 to 1. 
+#' The default weighting is 0.5 (only applies when a design has crossed blocks).
 #' 
-#' The total number of design plots is defined by the length of the \code{blocks} factors, if present, 
-#' otherwise by the length of the \code{treatments} factors. 
+#' \code{seed} is an integer which can be used to set the initial seed for the \code{blocksdesign} random number generator. 
+#' Normally it is best to use the \code{NULL} seed setting which allows \code{blocksdesign} to find its own random seed. 
 #' 
-#' The \code{blocks_model} output shows the overall achieved D-efficiency for each sequentially fitted blocks model. 
-#' Efficiency factors are shown for both the additive and for the multiplicative effects of each sequentially fitted
-#' model. For a fully nested blocks design, the two sets of efficiency factors will be equal but for a 
-#' generalized crossed block designs the two sets of efficiency factors will be different and 
-#' will provide guidance on the best choice of weighting for an efficient design. 
+#' The \code{blocks_model} output shows the overall achieved D and A-efficiency factors for each sequentially fitted blocks 
+#' model. Efficiency factors are shown for a first-order and a second-order model for each sequentially added
+#' block factor. For a fully nested blocks design, the two models are eqivalent and the two sets of efficiency factors will be
+#' equal but for a general crossed blocks model the two sets of efficiency factors will be different and 
+#' may provide some guidance on the best choice of weighting parameter for an efficient design. 
 #' 
 #' The definition of efficiency used by the \code{design} algorithm is the ratio of the generalized variance of the 
 #' full treatment design relative to the generalized variance of the optimized block and treatment design. 
 #' Using this definition, it is possible for quantitative level treatment designs to have efficiency factors greater
-#' than one therefore the main use of efficiency factors is to compare different optimizations of the same design.  
+#' than one. Therefore the main use of efficiency factors is to compare the relative efficiencies of different
+#'  optimizations of the same design.  
 #' 
 #' Outputs:
 #'
@@ -94,8 +83,8 @@
 #' \itemize{
 #'  \item  A data frame showing a randomized allocation of treatments to blocks. \cr
 #'  \item  A table showing the fractional size of the treatment design and the 
-#'  D-efficiency factor of that fraction. \cr
-#'  \item  A table showing the blocks sub-model design and the D-efficiency factor 
+#'  D-efficiency factors of that fraction. \cr
+#'  \item  A table showing the blocks sub-model design and the D- and A-efficiency factor 
 #'  of each successively fitted blocks sub-model. \cr
 #' }
 #' 
@@ -104,7 +93,7 @@
 #' factors to individual plots.}
 #' \item{treatments_model}{The fractional size of the treatment design together with the 
 #' D-efficiency of that fraction.}
-#' \item{blocks_model}{The blocks sub-model design together with the D-efficiency factor 
+#' \item{blocks_model}{The blocks sub-model design together with the D and A-efficiency factor 
 #' of each successively fitted blocks sub-model.}
 #' \item{seed}{Numerical seed for random number generator.}
 #' \item{searches}{Maximum number of searches in each stratum.}
@@ -117,32 +106,10 @@
 #' DURBAN, M., HACKETT, C., MCNICOL, J., NEWTON, A., THOMAS, W., & CURRIE, I. (2003). The practical use of semi-parametric models
 #'  in field trials, Journal of Agric. Biological and Envir. Stats., 8, 48-66.
 #'  
-#' Edmondson R. N. (1998). Trojan square and incomplete Trojan square designs for crop research. 
-#' Journal of Agricultural Science, Cambridge, 131, pp.135-142.
-#'
 #' @examples
 #' 
 #' ## For optimum results, the number of searches may need to be increased in practice.
-#' ## Designs should be rebuilt repeatedly to check that a near-optimum design has been found.  
-#' 
-#' ## 3 replicates of 48 treatments with 3 replicate blocks of size 48, 
-#' ## 18 nested sub-blocks of size 8 (sub1), 36 nested sub-sub-blocks of
-#' ## size 4 (sub2) and 72 nested sub-sub-sub-blocks of size two (sub3)
-#' treatments=factor(1:48)
-#' reps=factor(rep(1:3,each=48))
-#' sub1=factor(rep(1:18,each=8))
-#' sub2=factor(rep(1:36,each=4))
-#' sub3=factor(rep(1:72,each=2))
-#' blocks=data.frame(reps,sub1,sub2,sub3)
-#' design(treatments,blocks,searches=1)
-#' 
-#' ## 48 treatments in 2 replicate blocks of size 4 x 12 with 2 main rows and 3 main columns
-#' treatments=factor(1:48)
-#' replicates=factor(rep(1:2,each=48))
-#' rows=factor(rep(rep(1:2,each=24),2))
-#' cols=factor(rep(rep(1:3,each=4),8))
-#' blocks=data.frame(replicates,rows,cols)
-#' design(treatments,blocks,searches=1)
+#' ## Designs can be rebuilt repeatedly to check that a near-optimum design has been found.  
 #' 
 #' ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 #' treatments = factor(1:12)
@@ -152,15 +119,15 @@
 #' design(treatments,blocks)$blocks_model
 #' 
 #' ## 4 x 12 design for 4 replicates of 12 treatments with 16 nested blocks of size 3
-#' ## only the intermediate weighting will give an optimal Trojan design 
+#' ## only the default weighting (0.5) will ensure an optimal Trojan design 
 #' treatments = factor(1:12)
 #' MainCols = factor(rep(rep(1:4,each=3),4))
 #' MainRows = factor(rep(1:4,each=12))
-#' Columns = factor(rep(1:12,4))
-#' blocks = data.frame(MainCols,MainRows,Columns)
-#' \donttest{design(treatments,blocks,searches=100,weighting=0)$blocks_model
-#' design(treatments,blocks,searches=100)$blocks_model
-#' design(treatments,blocks,searches=100,weighting=1)$blocks_model}
+#' Cols = factor(rep(1:12,4))
+#' blocks = data.frame(MainRows,MainCols,Cols)
+#' \donttest{design(treatments,blocks,searches=200,weighting=0)$blocks_model
+#' design(treatments,blocks,searches=200)$blocks_model
+#' design(treatments,blocks,searches=200,weighting=1)$blocks_model}
 #' 
 #' ## 4 x 13 Row-and-column design for 4 replicates of 13 treatments 
 #' ## Youden design Plan 13.5 Cochran and Cox (1957).
@@ -168,7 +135,7 @@
 #' Rows =factor(rep(1:4,each=13))
 #' Cols =factor(rep(1:13,4))
 #' blocks =data.frame(Rows,Cols)
-#' \donttest{design(treatments,blocks,searches=500)}
+#' \donttest{design(treatments,blocks,searches=700)}
 #' 
 #' ## Durban - 272 treatments in a 16 x 34 design with nested rows-and-columns
 #' data(durban) 
@@ -181,28 +148,38 @@
 #' Col2 = factor(rep(rep(1:8,c(5,4,4,4,4,4,4,5)),16))
 #' Col3 = factor(rep(1:34,16))
 #' blocks = data.frame(Reps,Rows,Col1,Col2,Col3)
-#' ## D-efficiency factors assuming best design found by sequential optimization 
-#' \donttest{
-#' ## Optimises the assumed post-blocked design
-#' design(treatments,blocks,searches=1)$blocks_model
-#' ## Finds post-blocked efficiency factors of the original design  
+#' \donttest{design(treatments,blocks,searches=10)$blocks_model
+#' ## Compare with efficiency factors of original design; Durban et al (2003)
 #' blockEfficiencies(treatments,blocks)
 #' } 
 #' 
-#' ## differential replication including single replicate treatments
+#' ## differential replication including single replicate treatments (13 to 24)
 #' treatments=factor(c(rep(1:12,2), rep(13:24,1)))
 #' Main=factor(rep(1:2,each=18))
 #' Sub =factor(rep(1:6,each=6))
 #' blocks =data.frame(Main,Sub)
 #' design(treatments,blocks,searches=5)
 #' 
+#' ## 48 treatments in 2 replicate blocks of size 4 x 12 with 2 main rows and 3 main columns
+#' treatments=factor(1:48)
+#' replicates=factor(rep(1:2,each=48))
+#' rows=factor(rep(rep(1:2,each=24),2))
+#' cols=factor(rep(rep(1:3,each=8),4))
+#' blocks=data.frame(replicates,cols,rows)
+#' design(treatments,blocks,searches=5)
+#' 
 #' ## Factorial treatment designs defined by a treatments data frame and a factorial model equation.
+#' ## For some examples, a repeat loop with a break based on an efficiency factor criterion is used
+#' ## to search for a global optimal design from amongst a large number of local optimal designs 
 #' 
 #' ## Main effects of five 2-level factors in a half-fraction of a 2/2/2 nested blocks design
 #' treatments = expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2))
 #' blocks=data.frame(b1=factor(rep(1:2,each=8)),b2=factor(rep(1:4,each=4)),b3=factor(rep(1:8,each=2)))
 #' treatments_model="F1 + F2 + F3 + F4 + F5"
-#' design(treatments,blocks,treatments_model,searches=5)
+#' \donttest{repeat {
+#'  z=design(treatments,blocks,treatments_model,searches=5)
+#' if ( z$blocks_model[3,3]==1  ) break }
+#' z}
 #' 
 #' # Second-order model for five qualitative 2-level factors in 4 randomized blocks
 #' treatments=expand.grid(F1=factor(1:2),F2=factor(1:2),F3=factor(1:2),F4=factor(1:2),F5=factor(1:2))
@@ -228,14 +205,20 @@
 #' treatments=expand.grid(F1=factor(1:3),F2=factor(1:3),F3=factor(1:3),F4=factor(1:3))
 #' blocks=factor(rep(1:3,each=9))
 #' treatments_model=" ~ F1+F2+F3+F4"
-#' design(treatments,blocks,treatments_model,searches=5)
+#' \donttest{repeat {
+#' z=design(treatments,blocks,treatments_model,searches=10)
+#' if ( z$blocks_model[1,3]==1  ) break }
+#' z}
 #' 
 #' # Second-order model for a 1/3rd fraction of five qualitative 3-level factors in 3 blocks
 #' treatments=expand.grid( F1=factor(1:3), F2=factor(1:3), F3=factor(1:3), F4=factor(1:3), 
 #' F5=factor(1:3))
 #' blocks=factor(rep(1:3,each=27))
 #' treatments_model=" ~ (F1+F2+F3+F4+F5)^2"
-#'  \donttest{design(treatments,blocks,treatments_model,searches=500)}
+#' \donttest{repeat {
+#' z=design(treatments,blocks,treatments_model,searches=25)
+#' if ( z$blocks_model[1,3]==1  ) break }
+#' z}
 #' 
 #' # Second-order model for two qualitative and two quantitative level factors in 4 randomized blocks
 #' treatments=expand.grid(F1=factor(1:2),F2=factor(1:3),V1=1:3,V2=1:4)
@@ -254,24 +237,22 @@
 #' @importFrom stats anova lm model.matrix as.formula setNames 
 #' @importFrom lme4 lmer
 #' 
-  design = function(treatments,blocks=NULL,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1) {
+  design = function(treatments,blocks,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1) {
   options(contrasts=c('contr.SAS','contr.poly'))
   tol=1e-6
   TF=treatments
   if (is.factor(TF)) TF=data.frame(TF)
   if (!is.data.frame(TF)) stop("treatments must be a data frame or a factor")
-  if (is.null(blocks)) blocks=factor(rep(1,nrow(TF)))
-  BF=data.frame(blocks)
+  BF=blocks
+  if (is.factor(BF)) BF=data.frame(BF)
+  if (!is.data.frame(BF)) stop("blocks must be a data frame or a factor")
   if (!is.numeric(weighting))  stop("weighting must be a number between 0 and 1")
   if (weighting<0 | weighting>1)  stop("weighting must be a number between 0 and 1")
   if (is.null(treatments_model)) treatments_model=paste("~",paste(colnames(TF),collapse="*"))
   if (!substring(trimws(treatments_model, "l"), 1,1)=="~") treatments_model=paste("~",treatments_model)
-  if (is.null(seed)) seed=sample(10000,1)
-  if (is.na(seed) | !is.finite(seed) | is.nan(seed) | seed%%1!=0 | seed<0 ) stop(" seed parameter invalid  ")
-  set.seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   if (is.na(jumps) | !is.finite(jumps) | is.nan(jumps) | jumps<1 | jumps%%1!=0 | jumps>10) 
     stop(" number of jumps parameter is invalid (max is 10) ")
-  
   nunits=nrow(BF)
   if (is.null(searches)) 
     if (nunits<100) 
@@ -329,7 +310,7 @@
   # **********************************************************************************************************************
   NonSingular=function(TF,TM,BM,mainblocks,searches) {
     if(searches==0)  return(list(TF=TF,TM=TM))
-    if (ncol(TM)+ncol(BM)>(nunits-1)) return(list(TF=NULL,TM=NULL))
+    if (ncol(TM)+ncol(BM)>(nunits-1)) stop(" Block design has too many parameters")
     fullrank=ncol(TM)+ncol(BM) # fullrank not more than (nunits-1)
     Q=qr(t(cbind(TM,BM)))
     rank=Q$rank
@@ -345,40 +326,37 @@
         pivot=Q$pivot
       } else TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]
     }
-    stop(" Unable to find an initial non-singular design for this choice of block design")
+    stop(" Unable to find an initial non-singular design - try different initial seed or simplify the block design")
   }
   # *********************************************************************************************************************
   #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
   # due to swapping ith and jth treatments of a sample s of the set of plots 
   # *********************************************************************************************************************
-  dMat=function(TM,BM,V,s,na) {
-    TMB=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),V[1:ncol(TM),(ncol(TM)+1):ncol(V), drop=FALSE])),t(BM[s,,drop=FALSE]))
-    TMT=crossprod(t(crossprod(t(TM[s,,drop=FALSE]),V[1:ncol(TM),1:ncol(TM),drop=FALSE])),t(TM[s,,drop=FALSE]))
-    BMB=crossprod(t(crossprod(t(BM[s,,drop=FALSE]),V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE])),t(BM[s,,drop=FALSE]))
+  dMat=function(TM,BM,V,s,dim0,dim1,dim2) {
+    sTM=TM[s,,drop=FALSE]
+    sBM=BM[s,,drop=FALSE]
+    TMT=crossprod(t(crossprod(t(sTM),V[1:dim0,1:dim0,drop=FALSE])),t(sTM))
+    TMB=crossprod(t(crossprod(t(sTM),V[1:dim0,(dim0+1):ncol(V), drop=FALSE])),t(sBM))
+    BMB=crossprod(t(crossprod(t(sBM),V[(dim0+1):ncol(V),(dim0+1):ncol(V),drop=FALSE])),t(sBM))
     TMB=sweep(TMB,1,diag(TMB))
     TMT=sweep(TMT,1,diag(TMT))
     BMB=sweep(BMB,1,diag(BMB))
     dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
-    if (na) dMat[dMat<1]=NA
     return(dMat)
   }
   # ******************************************************************************************************************
   # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
   # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
   # *******************************************************************************************************************
-  DMax=function(TF,TM,addBM,multBM,addV,multV,mainBlocks,fullMod,u) {
+  DMax=function(TF,TM,BM,V,mainBlocks,dim0,dim1,dim2) {
     locrelD=1
-    mainSets=tabulate(mainBlocks[,u])
-    nSamp=pmin(rep(8,nlevels(mainBlocks[,u])), mainSets)
+    mainSets=tabulate(mainBlocks)
+    nSamp=pmin(rep(8,nlevels(mainBlocks)), mainSets)
     repeat {
       kmax=1
-      for (k in 1: nlevels(mainBlocks[,u])) {
-        s=sort(sample((1:nunits)[mainBlocks[,u]==levels(mainBlocks[,u])[k]] , nSamp[k])) 
-        adMat=dMat(TM,addBM,addV,s,TRUE)
-        if (fullMod) mdMat=dMat(TM,multBM,multV,s,TRUE)
-        if (fullMod & weighting<1) dMat=(1-weighting)*adMat+weighting*mdMat
-        else if (fullMod) dMat=mdMat
-        else dMat=adMat
+      for (k in 1: nlevels(mainBlocks)) {
+        s=sort(sample((1:nunits)[mainBlocks==levels(mainBlocks)[k]] , nSamp[k])) 
+        dMat=dMat(TM,BM,V,s,dim0,dim1,dim2)
         z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
         if (dMat[z[1],z[2]]>kmax) {
           kmax=dMat[z[1],z[2]]
@@ -388,50 +366,58 @@
       }
       if (kmax>(1+tol)) {
         locrelD=locrelD*kmax
-        addV=UpDate(addV,(TM[pi,]-TM[pj,]),(addBM[pj,]-addBM[pi,])  )
-        if (fullMod)
-          multV=UpDate(multV,(TM[pi,]-TM[pj,]),(multBM[pj,]-multBM[pi,]))
+        V=UpDate(V,(TM[pi,]-TM[pj,]),(BM[pj,]-BM[pi,])  )
         TM[c(pi,pj),]=TM[c(pj,pi),]
         TF[c(pi,pj),]=TF[c(pj,pi),]
       }  else if (sum(nSamp) == nunits) break
       else nSamp=pmin(mainSets,2*nSamp)
     }
-    list(addV=addV,multV=multV,locrelD=locrelD,TF=TF,TM=TM)
+    list(V=V,locrelD=locrelD,TF=TF,TM=TM)
   }
   # ************************************************************************************************************************
   # Optimize the nested blocks assuming a possible set of Main block constraints Initial randomized starting design.
   # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
   # ************************************************************************************************************************
-  blocksOpt=function(TF,TM,BF,searches,nunits) {
-    addblocks =lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")})
-    multblocks=lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})
-    mainBlocks=as.data.frame(matrix(factor(rep(1,nrow(BF))),nrow=nrow(BF),ncol=(ncol(BF)+1)))
-    colnames(mainBlocks)=c("mean",multblocks)
-    for (i in 1: (ncol(mainBlocks)-1)) mainBlocks[,i+1]= droplevels(interaction( mainBlocks[,i],BF[,i] ))
+   blocksOpt=function(TF,TM,BF,searches,nunits) {
+     dim0=ncol(TM)
+    mainBlocks=data.frame(factor(rep(1,nrow(BF))), matrix(nrow=nrow(BF),ncol=ncol(BF)))
+    for (i in 1: ncol(BF)) mainBlocks[,i+1]= droplevels(interaction( mainBlocks[,i],BF[,i] ))
+    colnames(mainBlocks)=c("mean", unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})) )
     for (u in 1:ncol(BF)) {
-      addBM=scale(model.matrix(as.formula(paste("~",addblocks[[u]])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
-      Q=qr(addBM)
-      addBM = addBM[,Q$pivot[1:Q$rank],drop=FALSE]
-      if ( (ncol(TM)+ncol(addBM)) > nunits-1) stop("Additive block design has too many fixed effects for number of plots ")
-      multBM=scale(model.matrix(as.formula(paste("~",multblocks[[u]])),mainBlocks), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
-      fullMod=(weighting>0 & ncol(multBM)>ncol(addBM) & ncol(TM)+ncol(multBM)<nunits)
-      if (fullMod) NS=NonSingular(TF,TM,multBM,mainBlocks[,u],searches) else NS=NonSingular(TF,TM,addBM,mainBlocks[,u],searches)
+      BM1=scale(model.matrix(as.formula(paste("~", paste0(colnames(BF)[1:u],collapse="+"))),BF), center = TRUE, scale = FALSE)
+      Q=qr(BM1)
+      BM1 = BM1[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+      BM1 = qr.Q(qr(BM1)) # orthogonal basis 
+      dim1=ncol(BM1)
+      if ((1+dim0+dim1)>nunits) stop("Additive block design has too many fixed effects for number of plots ")
+      if(u>1 & weighting>0){
+        BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF), center = TRUE, scale = FALSE)
+        Q=qr(BM2)
+        BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+        BM2 = qr.Q(qr(BM2)) # orthogonal basis 
+        } else BM2=BM1
+      dim2=ncol(BM2)
+      deg2=(weighting>0 & dim2>dim1 & (dim0+dim2)<nunits)
+      if (deg2) BM=BM2 else BM=BM1
+      NS=NonSingular(TF,TM,BM,mainBlocks[,u],searches)
       TM=NS$TM
-      TF=NS$TF   
-      addV=chol2inv(chol(crossprod(cbind(TM,addBM))))
-      if (fullMod) multV=chol2inv(chol(crossprod(cbind(TM,multBM)))) else  multV=NULL
+      TF=NS$TF  
       globrelD=0
       relD=1
       globTM=TM
       globTF=TF
+      if (deg2) BM[,(dim1+1):dim2] = BM[,(dim1+1):dim2]*weighting
+      Info=crossprod(cbind(TM,BM))
+      if (deg2) 
+        Info[(1+dim0+dim1):(dim0+dim2),(1+dim0+dim1):(dim0+dim2)] = Info[(1+dim0+dim1):(dim0+dim2),(1+dim0+dim1):(dim0+dim2)]/(weighting^2)
+      V=chol2inv(chol(Info))
       for (r in 1:searches) {
-          dmax=DMax(TF,TM,addBM,multBM,addV,multV,mainBlocks,fullMod,u)
+        dmax=DMax(TF,TM,BM,V,mainBlocks[,u],dim0,dim1,dim2)
         if (dmax$locrelD>(1+tol)) {
           relD=relD*dmax$locrelD
           TM=dmax$TM
           TF=dmax$TF
-          addV=dmax$addV
-          multV=dmax$multV
+          V=dmax$V
           if (relD>globrelD) {
             globTM=TM 
             globTF=TF 
@@ -449,23 +435,15 @@
             if (length(z)==0 & counter<501) next 
             else if (length(z)==0 & counter>500) break
             if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
-            if (fullMod) {
-              mDswap=dMat(TM,multBM,multV,s,FALSE)[2,1]
-              if (mDswap<tol & counter<501) next
-              else if (mDswap<tol & counter>500) break
-              Dswap=(1-weighting)*aDswap+weighting*mDswap
-            } else {
-              aDswap=dMat(TM,addBM,addV,s,FALSE)[2,1]
-              if (aDswap<tol & counter<501) next
-              else if (aDswap<tol & counter>500) break
-              Dswap=aDswap
-            }
+            testDswap=dMat(TM,BM,V,s,dim0,dim1,dim2)[2,1]
+            if (testDswap<tol & counter<501) next
+            else if (testDswap<tol & counter>500) break
+            Dswap=testDswap
             break
           }
           if (counter>500) break
           relD=relD*Dswap 
-          addV=UpDate(addV,(TM[s[1],]-TM[s[2],]),(addBM[s[2],]-addBM[s[1],]))
-          if (fullMod) multV=UpDate(multV,(TM[s[1],]-TM[s[2],]),(multBM[s[2],]-multBM[s[1],]))
+          V=UpDate(V,(TM[s[1],]-TM[s[2],]),(BM[s[2],]-BM[s[1],]))
           TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]  
           TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),]  
         } #jumps
@@ -490,20 +468,26 @@
     V=V-(tcrossprod(U)-tcrossprod(W))/((1+a)*(1-b)+c*c)
     return(V)
   }
+  
+
   # *********************************************************************************************************************
   # Fractional factorials
   # *********************************************************************************************************************
   factorial=function(TF,treatments_model,searches,nunits) {
+    #TF is the supplied set of treatment factors
     allfact= (all(sapply(TF,is.factor))) 
     replicates=nunits/nrow(TF)
+    # fully replicated base which remains unchanged
     nbase=nrow(TF)*floor(replicates) 
     TM=model.matrix(as.formula(treatments_model),TF)
     TM = qr.Q(qr(TM)) # orthogonal basis
-    if (ncol(TM)>nunits) stop("too many treatment parameters to be estimated from the given number of experimental units")
-    rerand=unlist(lapply(1:ceiling(replicates),function(i){ sample(seq_len(nrow(TF)))}))
-    if (replicates==round(replicates)) 
+    if (ncol(TM)>nunits) stop("too many treatment parameters to be estimated for the given number of experimental units")
+
+    if (replicates==round(replicates)) {
+      rerand=unlist(lapply(1:replicates,function(i){ sample(seq_len(nrow(TF)))}))
       return(list(TF=TF[rerand,,drop=FALSE],TM=TM[rerand,,drop=FALSE],eff=1,fraction=replicates))
-    gDfrac=0
+    }
+ 
     rerand=vector("list", searches)
     for (t in 1:searches) {
       for (z in seq_len(1000)) {
@@ -512,22 +496,33 @@
       }
       if (z>999) stop("Unable to find a non-singular treatment start design of the required size by random search ")
     }
+    
+    gDfrac=0
     for (i in 1:searches) {
       fTM=TM[rerand[[i]],,drop=FALSE]
       fTF=TF[rerand[[i]],,drop=FALSE]
       V=chol2inv(chol(crossprod(fTM[1:nunits,,drop=FALSE]))) # V is the variance matrix of the the non-singular starting design
       repeat {
-        M1VM2=       tcrossprod(tcrossprod(fTM[(nbase+1):nunits,,drop=FALSE],V),fTM[(nunits+1):nrow(fTM),,drop=FALSE])
-        M1VM1=1-diag(tcrossprod(tcrossprod(fTM[(nbase+1):nunits,,drop=FALSE],V),fTM[(nbase+1):nunits,,drop=FALSE] ))
-        M2VM2=1+diag(tcrossprod(tcrossprod(fTM[(nunits+1):nrow(fTM),,drop=FALSE],V),fTM[(nunits+1):nrow(fTM),,drop=FALSE]))
+        # plot numbers of a random sample of the unused treatment combinations
+        if ((nrow(fTM)-nunits)>1)
+        s= sort(sample( (nunits+1):nrow(fTM),min( (nrow(fTM)-nunits),2000)))
+        else s=nunits+1
+        bfTM=fTM[(nbase+1):nunits,,drop=FALSE] # included plots that can be swapped out
+        sfTM=fTM[s,,drop=FALSE] # excluded plots that can be swapped in
+        M1VM2=       tcrossprod(tcrossprod( bfTM,V),sfTM)
+        M1VM1=1-diag(tcrossprod(tcrossprod( bfTM,V),bfTM))
+        M2VM2=1+diag(tcrossprod(tcrossprod( sfTM,V),sfTM))
         Z=M1VM2**2 + tcrossprod(M1VM1,M2VM2)
         z=which(Z == max(Z), arr.ind = TRUE)[1,]
         if (  Z[z[1],z[2]]<(1+tol)) break
-        V=fractUpDate(V, fTM[nbase+z[1],], fTM[nunits+z[2],])   # parameters(V,row_swappedout,row_swappedin) 
-        fTM[ c(nbase+z[1],nunits+z[2]),] = fTM[ c(nunits+z[2],nbase+z[1]),]
-        fTF[ c(nbase+z[1],nunits+z[2]),] = fTF[ c(nunits+z[2],nbase+z[1]),]
+        p1= nbase+z[1]
+        p2= s[z[2]]
+        V=fractUpDate(V, fTM[p1,] , fTM[p2,])   # parameters(V,row_swappedout,row_swappedin) 
+        fTM[c(p1,p2),] = fTM[c(p2,p1),]
+        fTF[c(p1,p2),] = fTF[c(p2,p1),]
       }
       Dfrac=exp(determinant(crossprod(fTM[1:nunits,,drop=FALSE]),logarithm = TRUE)$modulus[1]/ncol(fTM))/replicates
+
       if (Dfrac>gDfrac) {
         gTM=fTM[1:nunits,,drop=FALSE]
         gTF=fTF[1:nunits,,drop=FALSE]
@@ -537,6 +532,8 @@
     }
     return(list(TF=gTF,TM=gTM,eff=gDfrac,fraction=replicates))
   }
+  
+
   # *************************************************************************************************************************
   # Main design program tests, optimizes treatment design then optimizes block design sequentially for each added block factor
   # *************************************************************************************************************************
@@ -550,10 +547,7 @@
   TM=Opt$TM
   TF=Opt$TF
   blocksModel=Opt$Effics
-  } else {
-    blocksModel=NULL
-    weighting=0
-  }
+  } else blocksModel=NULL
   Design=cbind(BF, TF)
   rownames(Design)=NULL
   list(design=Design,treatments_model=treatsModel,blocks_model=blocksModel,weighting=weighting,seed=seed,searches=searches,jumps=jumps)

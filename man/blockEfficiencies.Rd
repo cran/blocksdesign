@@ -2,19 +2,20 @@
 % Please edit documentation in R/efficiencies.R
 \name{blockEfficiencies}
 \alias{blockEfficiencies}
-\title{Efficiency factors}
+\title{D-Efficiency factors}
 \usage{
-blockEfficiencies(TF, BF, treatments_model = NULL)
+blockEfficiencies(TF, BF, treatments_model)
 }
 \arguments{
 \item{TF}{the treatments factor data frame}
 
 \item{BF}{the block factors data frame}
 
-\item{treatments_model}{the treatments model formula for the treatments data frame. Default is a full factorial model.}
+\item{treatments_model}{a model formula for the required treatments design where the default 
+formula assumes a fully crossed factorial treatment model.}
 }
 \description{
-Finds efficiency bounds for block designs.
+Finds D-efficiency for general treatment and block designs.
 }
 \details{
 efficiency factors of regular block designs

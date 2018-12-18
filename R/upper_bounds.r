@@ -30,6 +30,14 @@
   r = n/v #replication
   if (isTRUE(all.equal(r%%b, 0))) return(1) 
   k = n/b #block size	
+  # rectangular lattice
+  s=(1+sqrt(1+4*v))/2 
+  if (identical(s,floor(s)) & identical(k,s-1)) {
+    z=1/(r*k-s)
+    u=z/(s*(r-1))
+    bound=(v-1)/(v-1+r*k*(k*z+(r-s)*u))
+    return(round(bound,7))
+  }
   # this bound is for non-binary designs - see John and Williams page 44
   if (k > v) {
     kp=k%%v
@@ -76,5 +84,5 @@
   if (dual) 
     bound = (b - 1)/((b - v) + (v - 1)/bound)
   }
-  return(round(bound,6))
+  return(round(bound,7))
   }	

@@ -5,8 +5,8 @@
 \title{General block and treatment designs.}
 \usage{
 design(treatments, blocks = NULL, treatments_model = NULL,
-  fix_treatments = TRUE, weighting = 0.5, searches = NULL,
-  seed = NULL, jumps = 1)
+  weighting = 0.5, searches = NULL, seed = NULL, jumps = 1,
+  fullset = TRUE)
 }
 \arguments{
 \item{treatments}{a single treatment factor or a data frame containing one or more qualitative or 
@@ -18,12 +18,8 @@ factors in the required order of fitting.}
 \item{treatments_model}{a model formula for the required treatments design where the default 
 formula assumes a fully crossed factorial treatment model.}
 
-\item{fix_treatments}{logical TRUE (default) indicates that the full candidate set is the required
-treatment set whereas logical FALSE indicates that the required treatment set is obtained by
-sampling with replacement. Only applicable when \code{treatments} and \code{blocks} are of equal length.}
-
-\item{weighting}{a weighting factor between 0 and 1 for weighting the second-order interaction effects of
-crossed blocks designs where the default weighting is 0.5}
+\item{weighting}{a weighting factor between 0 and 1 for weighting the interaction effects of
+crossed blocks factors where the default weighting is 0.5}
 
 \item{searches}{the maximum number of local optima searched at each stage of an
 optimization. The default depends on the design size.}
@@ -33,6 +29,9 @@ random initialization.}
 
 \item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima. 
 The default is a single swap.}
+
+\item{fullset}{logical parameter for the method of selection when the treatment candidate set size and the design size are equal. 
+FALSE allows selection-with-replacement whereas TRUE requires selection of the full candidate set. Default is TRUE.}
 }
 \value{
 \item{treatments}{The treatments included in the design and the replication of each individual 
@@ -52,38 +51,40 @@ Constructs D-optimal block and treatment designs for feasible combinations of ne
 factors and feasible linear treatment models.
 }
 \details{
-The \code{treatments} object is a factor or a data frame containing one or more qualitative or quantitative
-level factors and is the candidate set from which the final treatment design is selected. 
+The \code{treatments} object is a factor or a data frame containing one or more qualitative level treatment factors. 
+The \code{treatments} object provides the candidate set for the treatment design.
 
 The \code{blocks} object is a factor or a data frame containing one or more qualitative level block factors where
 the length of the factors defines the overall size of the required design.
 The \code{blocks} object must be defined even when it is just a single factor with a single factor level.   
 
-The \code{blocks} object size divided by the \code{treatments} object size is the fractional size of the required 
-\code{treatments} design. If the fractional treatment design size is nonunity, the \code{treatments} design is
-always chosen from the candidate set by sampling with replacement. If the fractional treatment design
-size is unity, the method of choosing the treatment design can be determined by the \code{fix_treatments} parameter
-where TRUE (the default) means that the whole candidate set is used while FALSE means that the treatment set is
-chosen by sampling with  replacement.
+The treatment design is selected from the candidate set by choosing a set of treatments
+that optimizes the information matrix of the \code{treatments} design. Treatments are
+selected with replacement unless the size of the candidate set exactly equals the size of the required design
+in which case the default action is to select the full candidate set for the treatment design.
+This action allows any arbitrary treatment set with any arbitrary treatment replication
+to be input as the treatment design. If selection with replacement is required when the candidates
+set size exactly equals the design size, the \code{fullset} parameter should be set to FALSE.
 
 The design criterion is the ratio of the generalized variance of the
 full treatment candidate set relative to the generalized variance of the optimized treatment set 
 for the required treatment design (D-optimality). If the required design is a fractional factorial and the 
 candidate set is a full factorial, the candidate set will be orthogonal and any design selected from the candidate set will
 have a relative efficiency less than or equal to 1. For a quantitative level treatment model, however, 
-a full factorial design may not provide an optimal design and, in that case, the relative efficiency of 
-the optimized design may well exceed 1.
+a full factorial design may not provide an optimal design and then the relative efficiency of 
+the optimized design may well exceed 1. The efficiency factor can be used to compare different optimizations of
+same design with the best design having the largest efficiency.
  
 For unstructured treatment designs, the A-efficiency factor is also shown together with an estimated A-efficiency 
 upper-bound, where available. 
    
-The \code{design} algorithm fits the blocks design by sequentially adding \code{blocks} factors
+The \code{design} algorithm fits the blocks design by sequentially adding block design factors
 in the column order of the \code{blocks} data frame. Each block factor is optimized  
 conditional on all preceding block factors remaining fixed but ignoring all succeeding block factors.
-This method of sequential optimization allows the blocking factors to be fitted in order of importance with the 
+This method allows the blocking factors to be fitted in order of importance with the 
 largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
 
-For crossed blocks designs, the algorithm applies a differential weighting w to determine the relative importance
+For crossed blocks designs, a differential weighting factor w is used to determine the relative importance
 of the blocks main effects versus the blocks interaction effects. If w = 0 the algorithm fits a simple additive
 main effects design whereas if w = 1 the algorithm fits a fully crossed blocks design. For intermediate 0 < w < 1, 
 the block factor interaction effects are downweighted relative to the main effects where 
@@ -92,19 +93,13 @@ provided that all block effects are estimable, this weighting will give a design
 main block effects are assumed to be of greater importance than block interaction effects.
 
 For example, a design for 4 replicates of 12 treatments arranged in 4 main rows and 4 main columns with
-3 sub-columns nested within each main column (see \code{examples}) is known to have an optimal Trojan 
-solution with orthogonal main rows, orthogonal main columns and nested sub-columns with A-efficiency 22/31. 
-The default weighting
+3 plots nested within each intersection block (see \code{examples}) is known to have an optimal Trojan 
+solution with orthogonal main rows, orthogonal main columns and rows-by-columns intersection blocks with 
+A-efficiency = 22/31. The default weighting
 of 0.5 will find an optimal Trojan design whereas a weighting of w = 0 will find an optimal main column 
-blocks design with sub-optimal sub-column blocks while a weighting of w = 1 will find an optimal sub-column 
-blocks design with sub-optimal main column blocks.  
+blocks design but with a sub-optimal sub-blocks design while a weighting of w = 1 will find an optimal sub-blocks 
+design but with with a sub-optimal main columns design.  
 
-Trojan designs are rare and normally it will not be possible to optimise a design for main 
-rows, main columns and rows-by-columns interaction effects simultaneously. In that situation, a suitable
-choice of weighting parameter can help to find a good compromise design that will give good efficiency on the main
-effects of rows and columns and on the interaction effects of rows and columns simultaneously. 
-
-  
 Outputs:
 
 The principle design outputs comprise:
@@ -123,19 +118,25 @@ The principle design outputs comprise:
 
 ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
-treatments = factor(rep(1:12,4))
+treatments = factor(1:12)
 blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
 design(treatments,blocks)$blocks_model
 
-## 4 x 12 design for 4 replicates of 12 treatments with 16 nested column blocks of size 3
-## only an intermediate weighting will ensure an optimal Trojan design 
-treatments = factor(rep(1:12,4))
+## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
+## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
+treatments = factor(1:12)
+blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48))
+design(treatments,blocks)$blocks_model
+
+## 4 x 12 design for 4 replicates of 12 treatments with 3 sub-column blocks nested 
+## as above but showing 3 sub-columns nested within each main column
+treatments = factor(1:12)
 blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48), subCols = gl(12,1,48))
 \donttest{design(treatments,blocks,searches=200)$blocks_model}
 
 ## 4 x 13 Row-and-column design for 4 replicates of 13 treatments 
 ## Youden design Plan 13.5 Cochran and Cox (1957).
-treatments = factor(rep(1:13,4))
+treatments = factor(1:13)
 blocks = data.frame(Rows = gl(4,13), Cols = gl(13,1,52))
 \donttest{design(treatments,blocks,searches = 700)}
 
@@ -152,11 +153,10 @@ Col3 = factor(rep(1:34,16))
 blocks = data.frame(Reps,Rows,Col1,Col2,Col3)
 \donttest{design(treatments,blocks,searches=1)$blocks_model
 ## Finds post-blocked efficiency factors of original design; Durban et al (2003)
-blockEfficiencies(treatments,blocks)
-} 
+blockEfficiencies(treatments,blocks)} 
 
 ## differential replication 
-treatments=factor(c(rep(1:12,2), rep(13,12)))
+treatments=factor(c(rep(1:12,2),rep(13,12)))
 blocks = data.frame(Main = gl(2,18),  Sub = gl(12,3,36))
 design(treatments,blocks,searches = 5)
 
@@ -164,23 +164,22 @@ design(treatments,blocks,searches = 5)
 ## with 2 main rows and 3 main columns the cols factor must precede 
 ## the rows factor otherwise the design will confound one treatment contrast
 ## in the replicates.rows x columns interactions due to inherent aliasing 
-treatments=factor(rep(1:48,2))
+treatments=factor(1:48)
 blocks = data.frame(Reps = gl(2,48),Cols = gl(3,8,96),Rows = gl(2,24,96))
 design(treatments,blocks,searches=5)
 
 ## Factorial treatment designs defined by a factorial model equation.
 
-## Main effects of five 2-level factors in a half-fraction of 
-## a 2/2/2 nested blocks design
-treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:2), F3 = factor(1:2), 
-F4 = factor(1:2), F5 = factor(1:2))
+## Main effects of five 2-level factors in a half-fraction in 2/2/2 nested blocks design 
+## (may require many repeats to find a fully orthogonal solution)
+treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:2),
+ F3 = factor(1:2), F4 = factor(1:2), F5 = factor(1:2))
 blocks = data.frame(b1 = gl(2,8),b2 = gl(4,4),b3 = gl(8,2))
 model="F1 + F2 + F3 + F4 + F5"
-\donttest{ repeat {
- z = design(treatments,blocks,treatments_model=model,searches=5)
- if ( z$blocks_model[3,3] == 1) break }
+\donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
+if ( isTRUE(all.equal(z$blocks_model[3,3],1) ) ) break }
  print(z)}
-
+ 
 # Second-order model for five qualitative 2-level factors in 4 randomized blocks
 treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:2), F3 = factor(1:2), 
 F4 = factor(1:2), F5 = factor(1:2))
@@ -194,7 +193,9 @@ treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:2), F3 = factor(1:2),
 F4 = factor(1:2), F5 = factor(1:2))
 blocks = data.frame(rows = gl(4,4), cols = gl(4,1,16))
 model = "~ F1 + F2 + F3 + F4 + F5"
-design(treatments,blocks,treatments_model=model,searches = 50)
+\donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
+if ( isTRUE(all.equal(z$blocks_model[2,3],1) ) ) break }
+ print(z)}
 
 # Quadratic regression for three 3-level numeric factor assuming a 10/27 fraction
 treatments = expand.grid(A = 1:3, B = 1:3, C = 1:3)
@@ -210,11 +211,15 @@ model = " ~ F1 + F2 + F3 + F4"
 design(treatments,blocks,treatments_model=model,searches=25)
 
 # Second-order model for a 1/3rd fraction of five qualitative 3-level factors in 3 blocks
+# (may require many repeats to find a fully orthogonal solution)
 treatments = expand.grid(F1 = factor(1:3), F2 = factor(1:3), F3 = factor(1:3), 
 F4 = factor(1:3), F5 = factor(1:3))
 blocks=data.frame(main=gl(3,27))
 model = " ~ (F1 + F2 + F3 + F4 + F5)^2"
-\donttest{design(treatments,blocks,treatments_model=model,searches=500)}
+\donttest{ repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
+if ( isTRUE(all.equal(z$blocks_model[1,3],1) ) ) break}
+ print(z)
+}
 
 # Second-order model for two qualitative and two quantitative level factors in 4 blocks
 treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:3), V1 = 1:3, V2 = 1:4)

@@ -71,7 +71,7 @@ All other designs are constructed numerically by optimizing a D-optimality crite
 Outputs:
 
 \itemize{
-\item  A data frame showing the allocation of treatments to blocks with successive nested strata arranged in standard block order. \cr
+\item  A data frame showing the allocation of treatments to blocks with successive nested strata arranged in standard block order.\cr
 \item  A table showing the replication number of each treatment in the design. \cr
 \item  A table showing the block levels and the achieved D-efficiency and A-efficiency factor for each nested level together
   with A-efficiency upper bounds, where available. \cr
@@ -97,8 +97,6 @@ blocks(treatments=50,replicates=4,blocks=c(4,5))
 # as above but with 20 additional single replicate treatments, one single treatment per sub-block
 blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))
 
-blocks(treatments=c(12,12),replicates=c(2,1),blocks=c(2,3))
-
 # 6 replicates of 6 treatments in 4 blocks of size 9 (non-binary block design)
 blocks(treatments=6,replicates=6,blocks=4)
 
@@ -113,7 +111,8 @@ blocks(100,4,c(4,10))
 
 }
 \references{
-Sailer, M. O. (2013). crossdes: Construction of Crossover Designs. R package version 1.1-1. https://CRAN.R-project.org/package=crossdes
+Sailer, M. O. (2013). crossdes: Construction of Crossover Designs. R package version 1.1-1. 
+https://CRAN.R-project.org/package=crossdes
 
 Cochran, W.G., and G.M. Cox. 1957. Experimental Designs, 2nd ed., Wiley, New York.
 }

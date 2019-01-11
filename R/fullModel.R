@@ -1,0 +1,45 @@
+#' @title Full rank model
+#' 
+#' @description
+#' Finds a full column rank model for a treatment formula and a treatmnent data frame
+#' 
+#' @details
+#' The treatment formula fits a model.matrix for a set of treatments which may be factorial or numeric
+#' or a mixture of both. The function will fit the specified model and if there are column
+#' dependencies the function will then reduce the column space to full rank using the QR decomposition  
+#' 
+#' @param TF is the treatments factor data frame
+#' 
+#' @param model_formula is the matrix.model formula
+#'  
+#' @return
+#' Maximal full rank model matrix for fitted model
+#'  
+#' @examples
+#' 
+#' # Treatments are two 2-level factors A and B and one 3-level factor V
+#' # Required model is A + B + A:B + A:linear(V) + B:linear(V) + quadratic(V)
+#' # The example shows model formula which appear 'correct' but which over-parameterize
+#' # the model. It is 'reasonable' to expect model.matrix to give a full rank model and
+#' # the QR method will ensure that the fitted model is indeed a full rank model. 
+#' # NB The user MUST THEN CHECK to ensure that the fitted model is the required model.  
+#'
+#' treatments = expand.grid(A = factor(1:2), B = factor(1:2), V = 1:3)
+#'
+#' model = " ~ A * B + poly(V,2) + A:poly(V,1)  + B:poly(V,1)"
+#' model.matrix(as.formula(model),treatments)
+#' fullModel(treatments,model)
+#'
+#' model = " ~ (A + B) * poly(V,1) + poly(V,2)  + A:B"
+#' model.matrix(as.formula(model),treatments)
+#' fullModel(treatments,model)
+#' 
+#' @export
+    fullModel=function(TF,model_formula) {
+    TM=model.matrix(as.formula(model_formula),TF)
+    Q = qr(TM)
+    TM = TM[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+    return(TM)
+  }
+
+ 

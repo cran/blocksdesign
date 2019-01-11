@@ -22,10 +22,10 @@
 #' @examples 
 #' 
 #' # 50 plots, 10 treatments and 10 blocks for a design with 5 replicates and blocks of size 5 
-#' upper_bounds(n=50,v=10,b=10)
+#' A_bound(n=50,v=10,b=10)
 #'
 #' @export
-  upper_bounds=function(n,v,b) {
+  A_bound=function(n,v,b) {
   if ( !isTRUE(all.equal(n%%v,0)) ||  !isTRUE(all.equal(n%%b,0)) || (v+b-1)>n ) return(NA) 
   r = n/v #replication
   if (isTRUE(all.equal(r%%b, 0))) return(1) 

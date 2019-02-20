@@ -28,14 +28,14 @@
 #'
 #' model = " ~ A * B + poly(V,2) + A:poly(V,1)  + B:poly(V,1)"
 #' model.matrix(as.formula(model),treatments)
-#' fullModel(treatments,model)
+#' fullrankModel(treatments,model)
 #'
 #' model = " ~ (A + B) * poly(V,1) + poly(V,2)  + A:B"
 #' model.matrix(as.formula(model),treatments)
-#' fullModel(treatments,model)
+#' fullrankModel(treatments,model)
 #' 
 #' @export
-    fullModel=function(TF,model_formula) {
+    fullrankModel=function(TF,model_formula) {
     TM=model.matrix(as.formula(model_formula),TF)
     Q = qr(TM)
     TM = TM[,Q$pivot[1:Q$rank],drop=FALSE] # full rank

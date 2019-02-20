@@ -97,7 +97,7 @@
 #'
 #' # as above but with 20 additional single replicate treatments, one single treatment per sub-block
 #' blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))
-#'
+#' 
 #' # 6 replicates of 6 treatments in 4 blocks of size 9 (non-binary block design)
 #' blocks(treatments=6,replicates=6,blocks=4)
 #'

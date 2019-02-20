@@ -59,8 +59,10 @@
 #'   blocks fitted subsequently. If there are no defined bock factors, the algorithm assumes a completely randomised treatment design.
 #'  The outputs include a data frame of the block and treatment factors for each plot and a table showing the achieved D-efficiency 
 #'  factors for each set of nested or crossed blocks. Fractional factorial efficiency factors based on
-#'  the generalized variance of the complete factorial design are also shown (see the \code{design} documentation for more details) 
-#'
+#'  the generalized variance of the complete factorial design are also shown.
+#'  
+#'  For more details see the 'blocksdesign" vignette:
+#'  \code{vignette(package = "blocksdesign")}  
 #' 
 #' @references
 #' 

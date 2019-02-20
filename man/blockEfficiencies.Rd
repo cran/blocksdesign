@@ -4,7 +4,7 @@
 \alias{blockEfficiencies}
 \title{D-Efficiency factors}
 \usage{
-blockEfficiencies(TF, BF, treatments_model)
+blockEfficiencies(TF, BF, treatments_model = NULL)
 }
 \arguments{
 \item{TF}{the treatments factor data frame}

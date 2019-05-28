@@ -265,173 +265,181 @@
     tol = .Machine$double.eps ^ 0.5
     if (!is.null(seed)) set.seed(seed) 
   
-  # ********************************************************************************************************************
-  # Random swaps
-  # ********************************************************************************************************************    
-  Swaps=function(TF,BF,pivot,rank,mainblocks) {
-    candidates=NULL
-    while (is.null(candidates)) {
-      if (rank<(nrow(TF)-1)) s1=sample(pivot[(1+rank):nrow(TF)],1) else s1=pivot[nrow(TF)]
-      rownames(TF)=NULL
-      unavailable=suppressMessages(as.integer(rownames(match_df(TF, TF[s1,,drop=FALSE]))))
-      candidates = seq_len(nrow(TF))[mainblocks==mainblocks[s1] & BF!=BF[s1] & !(seq_len(nrow(TF))%in%unavailable)]
+    # *********************************************************************************************************************
+    #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
+    # due to swapping ith and jth treatments of a sample s of the set of plots 
+    # *********************************************************************************************************************
+    dMat=function(TM,BM,V,s) {
+      sTM=TM[s,,drop=FALSE]
+      sBM=BM[s,,drop=FALSE]
+      TMT=crossprod(t(crossprod(t(sTM),V[1:ncol(TM),1:ncol(TM),drop=FALSE])),t(sTM))
+      TMB=crossprod(t(crossprod(t(sTM),V[1:ncol(TM),(ncol(TM)+1):ncol(V), drop=FALSE])),t(sBM))
+      BMB=crossprod(t(crossprod(t(sBM),V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE])),t(sBM))
+      TMB=sweep(TMB,1,diag(TMB))
+      TMT=sweep(TMT,1,diag(TMT))
+      BMB=sweep(BMB,1,diag(BMB))
+      dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
+      return(dMat)
     }
-    if ( length(candidates)>1) s2=sample(candidates,1) else s2=candidates[1] 
-    return(c(s1,s2))
-  }
-  # **********************************************************************************************************************
-  # Initial randomized starting design. If the initial design is rank deficient, 
-  # random swaps with positive selection are used to to increase design rank
-  # **********************************************************************************************************************
-  blocksNonSingular=function(TF,BF,TM,BM,restrict) {
-    fullrank=ncol(TM)+ncol(BM) # fullrank not more than (plots-1)
-    Q=qr(t(cbind(TM,BM)))
-    rank=Q$rank
-    pivot=Q$pivot
-    for ( i in 1:500) {
-      if (rank==fullrank) return(list(TF=TF,TM=TM))
-      swap=Swaps(TF,BF,pivot,rank,restrict)
-      TM[c(swap[1],swap[2]),]=TM[c(swap[2],swap[1]),]
-      Q=qr(t(cbind(TM,BM)))
-      if (Q$rank>rank) {
-        TF[c(swap[1],swap[2]),]=TF[c(swap[2],swap[1]),]
-        rank=Q$rank
-        pivot=Q$pivot
-      } else TM[c(swap[1],swap[2]),]=TM[c(swap[2],swap[1]),]
-    }
-    stop(" Unable to find an initial non-singular design - try different initial seed or simplify the block design")
-  }
-  # *********************************************************************************************************************
-  #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
-  # due to swapping ith and jth treatments of a sample s of the set of plots 
-  # *********************************************************************************************************************
-  dMat=function(TM,BM,V,s,dim0) {
-    sTM=TM[s,,drop=FALSE]
-    sBM=BM[s,,drop=FALSE]
-    TMT=crossprod(t(crossprod(t(sTM),V[1:dim0,1:dim0,drop=FALSE])),t(sTM))
-    TMB=crossprod(t(crossprod(t(sTM),V[1:dim0,(dim0+1):ncol(V), drop=FALSE])),t(sBM))
-    BMB=crossprod(t(crossprod(t(sBM),V[(dim0+1):ncol(V),(dim0+1):ncol(V),drop=FALSE])),t(sBM))
-    TMB=sweep(TMB,1,diag(TMB))
-    TMT=sweep(TMT,1,diag(TMT))
-    BMB=sweep(BMB,1,diag(BMB))
-    dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
-    return(dMat)
-  }
-  # ******************************************************************************************************************
-  # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
-  # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
-  # *******************************************************************************************************************
-  DMax=function(TF,TM,BM,V,mainBlocks,dim0) {
-    locrelD=1
-    mainSets=tabulate(mainBlocks)
-    nSamp=pmin(rep(8,nlevels(mainBlocks)), mainSets)
-    repeat {
-      kmax=1
-      for (k in 1: nlevels(mainBlocks)) {
-        s=sort(sample((1:nrow(TF))[mainBlocks==levels(mainBlocks)[k]] , nSamp[k])) 
-        dMat=dMat(TM,BM,V,s,dim0)
-        z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
-        if (dMat[z[1],z[2]]>kmax) {
-          kmax=dMat[z[1],z[2]]
-          pi=s[z[1]]
-          pj=s[z[2]]
-        } 
-      }
-      if (kmax>(1+tol)) {
-        locrelD=locrelD*kmax
-        V=UpDate(V,(TM[pi,]-TM[pj,]),(BM[pj,]-BM[pi,])  )
-        TM[c(pi,pj),]=TM[c(pj,pi),]
-        TF[c(pi,pj),]=TF[c(pj,pi),]
-      }  else if (sum(nSamp) == nrow(TF)) break
-      else nSamp=pmin(mainSets,2*nSamp)
-    }
-    list(V=V,locrelD=locrelD,TF=TF,TM=TM)
-  }
-  # ************************************************************************************************************************
-  # Optimize the nested blocks assuming a possible set of Main block constraints Initial randomized starting design.
-  # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
-  # ************************************************************************************************************************
-   blocksOpt=function(TF,TM,BF,searches,treatments_model,nunits) {
-    dim0 = ncol(TM)
-    mainBlocks = data.frame(factor(rep(1,nunits)), matrix(nrow=nunits,ncol=ncol(BF)))
-    for (i in 1: ncol(BF)) mainBlocks[,i+1] = interaction( mainBlocks[,i],BF[,i],drop=TRUE)
-    colnames(mainBlocks) = c("mean", unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})) )
-
-    for (u in 1:ncol(BF)) {
-      BM1 = scale(model.matrix(as.formula(paste("~",paste0(colnames(BF)[1:u],collapse="+"))),BF), center = TRUE, scale = FALSE)
-      Q = qr(BM1)
-      BM1 = BM1[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
-      if ((1+dim0+ncol(BM1))>nrow(TF)) stop("Additive block design has too many fixed effects for number of plots ")
-      if(u>1 & weighting>0){
-        BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF), center = TRUE, scale = FALSE)
-        Q=qr(BM2)
-        BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
-      } else BM2=BM1
-      deg2=(weighting>0 & ncol(BM2)>ncol(BM1) & (dim0 + ncol(BM2))<nrow(TF))
-      if (deg2) BM = BM2 else BM = BM1
-      BM = qr.Q(qr(BM)) # orthogonal basis for BM 
-      if (ncol(TM)+ncol(BM)>(nrow(TF)-1)) stop(" Block design has too many parameters")
-      if(searches>0) {
-      NS = blocksNonSingular(TF,BF[,u],TM,BM,mainBlocks[,u])
-      TM = NS$TM
-      TF = NS$TF 
-      }
-      globrelD = 0
-      relD = 1
-      globTM = TM
-      globTF = TF
-      if (deg2) BM[,(ncol(BM1)+1):ncol(BM2)] = BM[,(ncol(BM1)+1):ncol(BM2)]*weighting
-      Info=crossprod(cbind(TM,BM))
-      if (deg2) 
-        Info[(1+dim0+ncol(BM1)):(dim0+ncol(BM2)),(1+dim0+ncol(BM1)):(dim0+ncol(BM2))] = 
-        Info[(1+dim0+ncol(BM1)):(dim0+ncol(BM2)),(1+dim0+ncol(BM1)):(dim0+ncol(BM2))]/(weighting^2)
-      V=chol2inv(chol(Info))
-      for (r in 1:searches) {
-        dmax=DMax(TF,TM,BM,V,mainBlocks[,u],dim0)
-        if (dmax$locrelD>(1+tol)) {
-          relD=relD*dmax$locrelD
-          TM=dmax$TM
-          TF=dmax$TF
-          V=dmax$V
-          if (relD>globrelD) {
-            globTM=TM 
-            globTF=TF 
-            globrelD=relD
- 
-          }
+    # ******************************************************************************************************************
+    # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
+    # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
+    # *******************************************************************************************************************
+    DMax=function(TF,TM,BM,V,mainBlocks) {
+      locrelD=1
+      mainSets=tabulate(mainBlocks)
+      nSamp=pmin(rep(8,nlevels(mainBlocks)), mainSets)
+      repeat {
+        kmax=1
+        for (k in 1: nlevels(mainBlocks)) {
+          s=sort(sample((1:nrow(TF))[mainBlocks==levels(mainBlocks)[k]] , nSamp[k])) 
+          dMat=dMat(TM,BM,V,s)
+          z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
+          if (dMat[z[1],z[2]]>kmax) {
+            kmax=dMat[z[1],z[2]]
+            pi=s[z[1]]
+            pj=s[z[2]]
+          } 
         }
-        if (r==searches) break
-        for (iswap in 1:jumps) {
-          counter=0
-          repeat {
-            counter=counter+1
-            s1=sample(seq_len(nrow(TF)),1)
-            rownames(TF)=NULL
-            unavailable=suppressMessages(as.integer(rownames(match_df(TF,TF[s1,,drop=FALSE]))))
-            z= seq_len(nrow(TF))[mainBlocks[,u]==mainBlocks[s1,u] & 
-                                   mainBlocks[,u+1]!=mainBlocks[s1,u+1] & !(seq_len(nrow(TF))%in%unavailable)]
-            if (length(z)==0 & counter<501) next 
-            else if (length(z)==0 & counter>500) break
-            if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
-            testDswap=dMat(TM,BM,V,s,dim0)[2,1]
-            if (testDswap<tol & counter<501) next
-            else if (testDswap<tol & counter>500) break
-            Dswap=testDswap
-            break
+        if (kmax>(1+tol)) {
+          locrelD=locrelD*kmax
+          V=UpDate(V,(TM[pi,]-TM[pj,]),(BM[pj,]-BM[pi,])  )
+          TM[c(pi,pj),]=TM[c(pj,pi),]
+          TF[c(pi,pj),]=TF[c(pj,pi),]
+        }  else if (sum(nSamp) == nrow(TF)) break
+        else nSamp=pmin(mainSets,2*nSamp)
+      }
+      list(V=V,locrelD=locrelD,TF=TF,TM=TM)
+    }
+    # ********************************************************************************************************************
+    # Random swaps
+    # ********************************************************************************************************************    
+    Swaps=function(TF,BF,pivot,rank,mainblocks) {
+      candidates=NULL
+      counter=0
+      while (length(candidates)==0 & counter<500) {
+        counter=counter+1
+        swapOut=pivot[1:rank]
+        swapIn=pivot[(1+rank):nrow(TF)]
+        if (length(swapIn)>1) s1=sample(swapIn,1) else s1=swapIn
+        rownames(TF)=NULL
+        sameTrts=suppressMessages(as.integer(rownames(match_df(TF, TF[s1,,drop=FALSE]))))
+        candidates = seq_len(nrow(TF))[mainblocks==mainblocks[s1] & BF!=BF[s1] & !(seq_len(nrow(TF))%in%sameTrts) & (seq_len(nrow(TF))%in%swapOut)]
+      }
+      if (length(candidates)==0) stop(" 1. Unable to find an initial non-singular starting design - perhaps try a simpler block design?")
+      if (length(candidates)>1) s2=sample(candidates,1) else s2=candidates 
+      return(c(s1,s2))
+    }
+    # **********************************************************************************************************************
+    # Initial randomized starting design. If the initial design is rank deficient, 
+    # random swaps with positive selection are used to to increase design rank
+    # **********************************************************************************************************************
+    blocksNonSingular=function(TF,BF,TM,BM,restrict) {
+      fullrank=ncol(TM)+ncol(BM) # fullrank not more than (plots-1)
+      Q=qr(t(cbind(TM,BM)))
+      rank=Q$rank
+      pivot=Q$pivot
+      for ( i in 1:500) {
+        if (rank==fullrank) return(list(TF=TF,TM=TM,fullrank=TRUE))
+        swap=Swaps(TF,BF,pivot,rank,restrict)
+        TM[c(swap[1],swap[2]),]=TM[c(swap[2],swap[1]),]
+        Q=qr(t(cbind(TM,BM)))
+        if (Q$rank>rank) {
+          TF[c(swap[1],swap[2]),]=TF[c(swap[2],swap[1]),]
+          rank=Q$rank
+          pivot=Q$pivot
+        } else TM[c(swap[1],swap[2]),]=TM[c(swap[2],swap[1]),]
+      }
+      return(list(TF=TF,TM=TM,fullrank=FALSE))
+    }
+    # ************************************************************************************************************************
+    # Optimize the nested blocks assuming a possible set of Main block constraints Initial randomized starting design.
+    # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
+    # ************************************************************************************************************************
+    blocksOpt=function(TF,TM,BF,searches,treatments_model,nunits) {
+      mainBlocks = data.frame(factor(rep(1,nunits)), matrix(nrow=nunits,ncol=ncol(BF)))
+      for (i in 1: ncol(BF)) mainBlocks[,i+1] = interaction( mainBlocks[,i],BF[,i],drop=TRUE)
+      colnames(mainBlocks) = c("mean", unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse=".")})) )
+      for (u in 1:ncol(BF)) {
+        BM1 = scale(model.matrix(as.formula(paste("~",paste0(colnames(BF)[1:u],collapse="+"))),BF), center = TRUE, scale = FALSE)
+        Q = qr(BM1)
+        BM1 = BM1[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+        if ((1+ncol(TM)+ncol(BM1))>nrow(TF)) stop("Additive block design has too many fixed effects for number of plots ")
+        if(u>1 & weighting>0){
+          BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF), center = TRUE, scale = FALSE)
+          Q=qr(BM2)
+          BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+        } else BM2=BM1
+        fullrank=FALSE
+        deg2=(weighting>0 & ncol(BM2)>ncol(BM1) & (ncol(TM) + ncol(BM2))<nrow(TF))
+        while(fullrank==FALSE) {
+          if (deg2) BM = BM2 else BM = BM1
+          BM = qr.Q(qr(BM)) # orthogonal basis for BM 
+          if(searches>0) {
+            NS = blocksNonSingular(TF,BF[,u],TM,BM,mainBlocks[,u])
+            TM = NS$TM
+            TF = NS$TF 
+            fullrank=NS$fullrank
           }
-          if (counter>500) break
-          relD=relD*Dswap 
-          V=UpDate(V,(TM[s[1],]-TM[s[2],]),(BM[s[2],]-BM[s[1],]))
-          TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]  
-          TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),]  
-        } #jumps
-      } #searches
-      TM=globTM
-      TF=globTF 
-    } # list length
-    Effics=blockEfficiencies(TF,BF,treatments_model[length(treatments_model)])
-    list(TF=TF,TM=TM,Effics=Effics)
-   } 
+          if (fullrank==FALSE & deg2==FALSE)  stop("Cannot find a non-singular starting block design - perhaps try a simpler design? ")
+          if (fullrank==FALSE & deg2==TRUE) deg2=FALSE
+        }
+        globrelD = 0
+        relD = 1
+        globTM = TM
+        globTF = TF
+        if (deg2) BM[,(ncol(BM1)+1):ncol(BM2)] = BM[,(ncol(BM1)+1):ncol(BM2)]*weighting
+        Info=crossprod(cbind(TM,BM))
+        if (deg2) 
+          Info[(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2)),(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2))] = 
+          Info[(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2)),(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2))]/(weighting^2)
+        V=chol2inv(chol(Info))
+        for (r in 1:searches) {
+          dmax=DMax(TF,TM,BM,V,mainBlocks[,u])
+          if (dmax$locrelD>(1+tol)) {
+            relD=relD*dmax$locrelD
+            TM=dmax$TM
+            TF=dmax$TF
+            V=dmax$V
+            if (relD>globrelD) {
+              globTM=TM 
+              globTF=TF 
+              globrelD=relD
+              
+            }
+          }
+          if (r==searches) break
+          for (iswap in 1:jumps) {
+            counter=0
+            repeat {
+              counter=counter+1
+              s1=sample(seq_len(nrow(TF)),1)
+              rownames(TF)=NULL
+              unavailable=suppressMessages(as.integer(rownames(match_df(TF,TF[s1,,drop=FALSE]))))
+              z= seq_len(nrow(TF))[mainBlocks[,u]==mainBlocks[s1,u] & 
+                                     mainBlocks[,u+1]!=mainBlocks[s1,u+1] & !(seq_len(nrow(TF))%in%unavailable)]
+              if (length(z)==0 & counter<501) next 
+              else if (length(z)==0 & counter>500) break
+              if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
+              testDswap=dMat(TM,BM,V,s)[2,1]
+              if (testDswap<tol & counter<501) next
+              else if (testDswap<tol & counter>500) break
+              Dswap=testDswap
+              break
+            }
+            if (counter>500) break
+            relD=relD*Dswap 
+            V=UpDate(V,(TM[s[1],]-TM[s[2],]),(BM[s[2],]-BM[s[1],]))
+            TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),]  
+            TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),]  
+          } #jumps
+        } #searches
+        TM=globTM
+        TF=globTF 
+      } # list length
+      Effics=blockEfficiencies(TF,BF,treatments_model[length(treatments_model)])
+      list(TF=TF,TM=TM,Effics=Effics)
+    } 
    # *******************************************************************************************************************
    # Updates variance matrix for pairs of swapped treatments using standard matrix updating formula
    # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB

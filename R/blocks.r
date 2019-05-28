@@ -343,9 +343,8 @@
       for (i in seq_len(ncol(Design)-2))
         if (nunits%%nlevels(Design[,i])==0 )
           bounds[i]=A_bound(nunits,nlevels(Design[,ncol(Design)]),nlevels(Design[,i]) )
-    names =unlist(lapply(1:(ncol(Design)-2), function(j) {paste0("Level_",j)}))
     blocklevs=unlist(lapply(1:(ncol(Design)-2), function(j) {nlevels(Design[,j])}))
-    efficiencies=data.frame(cbind(names,blocklevs,effics,bounds))
+    efficiencies=data.frame(cbind(labels(blocks),blocklevs,effics,bounds))
     colnames(efficiencies)=c("Level","Blocks","D-Efficiency","A-Efficiency", "A-Bound")
     return(efficiencies)
   }
@@ -388,12 +387,21 @@
   if (is.null(searches)) 
     if (nunits<1000) searches=10000%/%nunits else if (nunits<5000) searches=5000%/%nunits else searches=1
   if( !is.finite(searches) | is.nan(searches) | searches<1 | searches%%1!=0 ) stop(" searches parameter is invalid")
+  
+  if (is.null(names(blocks))) 
+    names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j-1)}))
+  
   if (prod(blocks)*2>nunits) stop("Too many blocks for the available plots  - each block must contain at least two plots")
   blocksizes=BlockSizes(blocks,nunits)
-  blkdesign=cbind(rep("Blocks_1",prod(blocks)),expand.grid(lapply(length(blocks):1,
-                                                          function(i) {factor(seq(blocks[i]),labels=lapply(1:blocks[i], 
-                                                                   function(j){paste0("Blocks_",j)}))}))[length(blocks):1])
-  colnames(blkdesign)=unlist(lapply(1:ncol(blkdesign), function(j) {paste0("Level_",j-1)}))
+  
+  
+  grid=expand.grid(lapply(length(blocks):1,function(i) {factor(seq(blocks[i]),                                                             
+                                                               labels=lapply(1:blocks[i], function(j){paste0("Blocks_",j)}))}))
+  grid=grid[,length(blocks):1,drop=FALSE]
+  colnames(grid)=labels(blocks)
+  blkdesign=cbind("block0"=rep("Blocks_1",prod(blocks)),grid )
+  
+  
   blkDesign=blkdesign[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
   TF=NULL
   regBlocks=isTRUE(all.equal(max(blocksizes), min(blocksizes)))

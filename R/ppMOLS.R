@@ -1,0 +1,191 @@
+#' @title Prime power MOLS from finite fields
+#' 
+#' @description
+#' Finds MOLS for r squares of dimension p**q where r < p**q
+#' and p is prime and either q is 1 for any p
+#' or q < 13 for p = 2, or q < 8 for p = 3, or q < 6 for p = 5,
+#' or q < 5 for p = 7, or q < 4 for p = 11, 13, 17 or 19  or q < 3 for
+#' any other prime <100. 
+#' 
+#' @details Finds MOLS by cyclic permuation of the elements of a prime number or the elements
+#' of a prime-power finite field based on a suitable choice of   
+#' primitive polynomial. Primitive polynomials for the sizes of 
+#' finite fields outlined in the description are extracted from the
+#' Supplement to Hansen and Mullen (1992)
+#' 
+#' @references HANSEN, T. & MULLEN, G. L. (1992) PRIMITIVE PolynomF::polynomialS OVER FINITE FIELDS
+#' Mathematics of Computation, 59, 639-643 and Supplement. 
+#'   
+#' @param p is a prime (see description)  
+#' 
+#' @param q is an integer power (see description)
+#' 
+#' @param r is the total number of replicates < p**q 
+#' 
+#' @return
+#' dataframe of factor levels for rows, columns and treatmnent sets
+#'  
+#' @examples
+#' 
+#' MOLS(2,3,7)
+#' MOLS(3,2,4)
+#' \donttest{MOLS(3,3,4)}
+#'  \donttest{MOLS(23,2,2)}
+#'  
+#' @export
+MOLS=function(p,q,r) {
+  if (!isPrime(p))  stop("The parameter p must be a prime number ")
+  if ( r>(p**q-1) ) stop(paste("Not a valid number of replicates" ))
+  if (q==1 ) {
+  mols=sapply(0:r,function(z){ sapply(0:(p-1), function(j){ (rep(0:(p-1))*z +j)%%p}) })
+  mols=data.frame(rep(1:p,p),mols+1)
+  mols[c(1,2)]=mols[c(2,1)]
+  colnames(mols)=c("Row","Col",paste("T", 1:r, sep = ""))
+  return(mols)
+  }
+  
+  if (p > 97) stop("Not a valid prime - if q > 1 then p must be a prime less than 100")
+  primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) 
+  powers=c(12,7,5,4,3,3,3,3,rep(2,17))
+pp2=list(
+  c(1,1,1),
+  c(1,0,1,1),
+  c(1,0,0,1,1),
+  c(1,0,0,1,0,1),
+  c(1,0,0,0,0,1,1),
+  c(1,0,0,0,0,0,1,1),
+  c(1,0,0,0,1,1,1,0,1),
+  c(1,0,0,0,0,1,0,0,0,1),
+  c(1,0,0,0,0,0,0,1,0,0,1),
+  c(1,0,0,0,0,0,0,0,0,1,0,1),
+  c(1,0,0,0,0,0,1,0,1,0,0,1,1)) 
+pp3=list(
+  c(1,1,2),
+  c(1,0,2,1),
+  c(1,0,0,1,2),
+  c(1,0,0,0,2,1),
+  c(1,0,0,0,0,1,2),
+  c(1,0,0,0,0,2,0,1))
+pp5=list(
+  c(1,1,2),
+  c(1,0,3,2),
+  c(1,0,1,2,2),
+  c(1,0,0,0,4,2))
+pp7=list(
+  c(1,1,3),
+  c(1,0,3,2),
+  c(1,0,1,3,5))
+pp11=list(
+  c(1,1,7),
+  c(1,0,1,4))
+pp13=list(
+  c(1,1,2),
+  c(1,0,1,6))
+pp17=list(
+  c(1,1,3),
+  c(1,0,1,3))
+pp19=list(
+  c(1,1,2),
+  c(1,0,1,4))
+pp23=list(c(1,1,7))
+pp29=list(c(1,1,3))
+pp31=list(c(1,1,12))
+pp37=list(c(1,1,5))
+pp41=list(c(1,1,12))
+pp43=list(c(1,1,3))
+pp47=list(c(1,1,13))
+pp53=list(c(1,1,5))
+pp59=list(c(1,1,2))
+pp61=list(c(1,1,2))
+pp67=list(c(1,1,12))
+pp71=list(c(1,1,11))
+pp73=list(c(1,1,11))
+pp79=list(c(1,1,3))
+pp83=list(c(1,1,2))
+pp89=list(c(1,1,6))
+pp97=list(c(1,1,5))
+
+PP=list(pp2,pp3,pp5,pp7,pp11,pp13,pp17,pp19,pp23,pp29,pp31,pp37,pp41,pp43,pp47,pp53,pp59,pp61,pp67,pp71,pp73,pp79,pp83,pp89,pp97)
+for (i in 1:25)
+  PP[[i]]=lapply(PP[[i]],rev)
+
+index=which(p==primes)
+if ( q>powers[index] ) stop(paste("Not a valid power - q must be not more than ", powers[index ]))
+
+checkff = function(p,q,X) {
+  rowMax=q
+  C=lapply(X,coef)
+  M= do.call(rbind, lapply(C, function(x){ 
+    length(x) <- rowMax 
+    x 
+  })) 
+  if (any(duplicated(data.frame(M))==TRUE)) stop(paste("Could not find a set of primitive elenents for p = ",p," and q = ",q))
+}
+
+reduce = function(X,primpol,p,q) {
+  c=coef(X)
+  if(length(c)>q) 
+    c=coef(PolynomF::polynomial(c[1:q])+primpol*c[q+1])
+  X=PolynomF::polynomial(c%%p)
+  X
+}
+
+ff = function(p,q,index) {
+  primpol=PP[[index]][[q-1]]
+  primpol=PolynomF::polynomial(  (-primpol[1:q])%%p  )
+  X = vector(mode = "list", length = p**q)
+  X[[1]]=PolynomF::polynomial(c(0,0))
+  X[[2]]=PolynomF::polynomial(c(1,0)) 
+  X[[3]]=PolynomF::polynomial(c(0,1))
+  for( i in 4:p**q) { 
+    X[[i]]=X[[i-1]]*X[[3]]
+    X[[i]]=reduce(X[[i]],primpol,p,q)
+  }
+  checkff(p,q,X)
+  X
+}
+
+modcoef=function(z) {
+  coef=lapply(z,  function(x) coef(x)%%p)
+  rowMax= max(sapply(coef, length))
+  M= do.call(rbind, lapply(coef,function(x){ 
+    length(x) = rowMax
+    x 
+  }))  
+  M[is.na(M)] = 0
+  M
+}
+
+ls=function(p,q,r,index) {
+  v=p**q
+  shift=c(1:v , (1+2*v):(v*v) , (1+v):(2*v) )
+  gf=ff(p,q,index)
+  M=modcoef(gf)
+  LS=rep(0,v*v)
+  for (i in 1:ncol(M))
+    LS= LS +   (rep(M[,i],v) + rep(M[,i],each=v))%%p * p**(i-1)
+  D=data.frame(LS+1)
+  if (r>1) {
+    for (i in 2:r) {
+      LS=LS[shift]
+      D=cbind(D,LS+1)
+    }
+  }
+  D
+}
+
+lscheck=function(D,p,q) {
+  for (i in 1:(ncol(D)-1))
+    for (j in (i+1):ncol(D)) {
+           if( all(table(D[,c(i,j)])!=1)) stop(paste("Latin squares for p = ",p," and q= ",q," are non-orthogonal for i = ",i," and j = ",j))
+      else print(paste ("OK", p , q))
+    }
+}
+    D=ls(p,q,r,index)
+    colnames(D)=paste("T", 1:ncol(D), sep = "")
+    Row=rep(1:p**q,each=p**q)
+    Col=rep(1:p**q,p**q)
+    D=data.frame(cbind(Row,Col,D))
+    #if (r>1) lscheck(D[,3:ncol(D)],p,q)
+return(D)
+}

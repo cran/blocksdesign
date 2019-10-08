@@ -30,12 +30,8 @@
 #' Square lattice designs are constructed algebraically from Latin squares or MOLS.
 #'
 #' Rectangular lattice designs are resolvable incomplete block designs for r replicates of (p-1)*p treatments 
-#' arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Rectangular lattice designs 
-#' are constructed algebraically from Latin squares or MOLS.
-#'
-#' Designs based on prime-power MOLS require the \code{\link[crossdes]{MOLS}} package.
-#'
-#' All other designs are constructed numerically by optimizing a D-optimality criterion.
+#' arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Currently, rectangular lattices are
+#' constructed algorithmically and optimality is not guaranteed.
 #'
 #' Outputs:
 #'
@@ -74,9 +70,6 @@
 #'
 #' @references
 #'
-#' Sailer, M. O. (2013). crossdes: Construction of Crossover Designs. R package version 1.1-1. 
-#' https://CRAN.R-project.org/package=crossdes
-#'
 #' Cochran, W.G., and G.M. Cox. 1957. Experimental Designs, 2nd ed., Wiley, New York.
 #'
 #' @examples
@@ -87,7 +80,7 @@
 #' 
 #' # 12 treatments x 4 replicates in 4 complete blocks with 4 sub-blocks of size 3
 #' # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
-#' blocks(treatments=12,replicates=4,blocks=c(4,4))
+#' \donttest{blocks(treatments=12,replicates=4,blocks=c(4,4))}
 #'
 #' # 3 treatments x 2 replicates + 2 treatments x 4 replicates in two complete randomized blocks
 #' blocks(treatments=c(3,2),replicates=c(2,4),searches=10)
@@ -96,7 +89,7 @@
 #' blocks(treatments=50,replicates=4,blocks=c(4,5))
 #'
 #' # as above but with 20 additional single replicate treatments, one single treatment per sub-block
-#' blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))
+#' \donttest{blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))}
 #' 
 #' # 6 replicates of 6 treatments in 4 blocks of size 9 (non-binary block design)
 #' blocks(treatments=6,replicates=6,blocks=4)
@@ -111,26 +104,16 @@
 #' blocks(100,4,c(4,10)) 
 #' 
 #' @export
-#' @importFrom stats anova lm model.matrix as.formula setNames 
+#' @importFrom stats coef anova lm model.matrix as.formula setNames 
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
-  # ****************************************************************************************************
-  # Tests for and constructs square lattice designs
-  # *****************************************************************************************************
-  lattice=function(v,r) {
-    mols=orthogLS(v)
-    if(length(mols)<r) return(NULL)
-    mols=lapply(1:length(mols),function(z){ (z-1)*v+mols[[z]] }) 
-    TF=factor(unlist(lapply(1:r,function(i){seq_len(v*v)[order(as.numeric(mols[[i]]))]})))
-    df=data.frame(Reps=rep(sample(1:r),each=(v*v)),Blocks=rep(sample(1:(v*r)),each=v),Plots=sample(1:(v*v*r)),TF)
-    TF=df[ do.call(order, df), ][,4]
-    return(TF)
-  }
+ 
   # **************************************************************************************************
   # Tests for and constructs rectangularlattice designs
   # ***************************************************************************************************
   rectlattice=function(v,r) {
-    mols=orthogLS(v)
+    mols=lattices(v,r-2)
+    print(mols)
     r1=sample(1:v)
     mols=lapply(1:length(mols),function(i){mols[[i]][r1,r1]})
     mols=mols[sapply(1:length(mols),function(z){ isTRUE(all.equal(sort(diag(mols[[z]])),(0:(v-1)) ))})]
@@ -407,14 +390,17 @@
   regBlocks=isTRUE(all.equal(max(blocksizes), min(blocksizes)))
   regReps  =isTRUE(all.equal(max(replicates), min(replicates)))
   k=nunits/prod(blocks)  # average block size
-  if (identical(k,floor(k)) & regReps & regBlocks & replicates[1]==blocks[1] & length(blocks)==2) { 
+  
+  
+  if (regReps & regBlocks & replicates[1]==blocks[1] & length(blocks)==2) { 
   s=sqrt(ntrts)  # dimension of a square lattice 
   Lattice=(identical(s,floor(s)) & replicates[1]<(s+2) & k==s)
-  if (Lattice) TF=lattice(s,replicates[1]) 
-  s=(sqrt(1+4*ntrts)+1)/2 # dimension of a rectangular lattice 
-  rectLat=(identical(s,floor(s)) & replicates[1]<(s+1) & k==(s-1))
-  if (rectLat) TF=rectlattice(s,replicates[1]) 
+  if (Lattice) TF=lattices(s,(replicates[1]-2)) 
+ # s=(sqrt(1+4*ntrts)+1)/2 # dimension of a rectangular lattice 
+ # rectLat=(identical(s,floor(s)) & replicates[1]<(s+1) & k==(s-1))
+ # if (rectLat) TF=rectlattice(s,replicates[1])
   }
+  
   if (is.null(TF)) {
    if ( hcf%%prod(blocks)==0 ) 
      TF=data.frame(Treatments)

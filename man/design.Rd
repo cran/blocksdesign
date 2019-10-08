@@ -110,13 +110,13 @@ For more details see \code{vignette(package = "blocksdesign")}
 # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
 treatments = factor(1:12)
 blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
-design(treatments,blocks)
+\donttest{design(treatments,blocks)}
 
 ## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
 ## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
 treatments = factor(1:12)
 blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48))
-design(treatments,blocks)
+\donttest{design(treatments,blocks)}
 
 ## 4 x 12 design for 4 replicates of 12 treatments with 3 sub-column blocks nested 
 ## as above but showing 3 sub-columns nested within each main column
@@ -190,7 +190,7 @@ treatments = expand.grid(F1 = factor(1:3), F2 = factor(1:3), F3 = factor(1:3),
 F4 = factor(1:3))
 blocks = data.frame(main = gl(3,9))
 model = " ~ F1 + F2 + F3 + F4"
-design(treatments,blocks,treatments_model=model,searches=25)
+\donttest{ design(treatments,blocks,treatments_model=model,searches=25)}
 
 # 2nd-order model for a 1/3rd fraction of five qualitative 3-level factors in 3 blocks
 # (may require many repeats to find a fully orthogonal solution)
@@ -206,7 +206,7 @@ if ( isTRUE(all.equal(z$blocks_model[1,3],1) ) ) break}
 treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:3), V1 = 1:3, V2 = 1:4)
 blocks = data.frame(main = gl(2,18))
 model = " ~ (F1 + F2 + V1 + V2)^2 +  I(V1^2) +  I(V2^2)"
-design(treatments,blocks,treatments_model=model,searches=5)
+\donttest{ design(treatments,blocks,treatments_model=model,searches=5)}
  
 # Plackett and Burman design for eleven 2-level factors in 12 runs 
 GF = expand.grid(F1 = factor(1:2,labels=c("a","b")), F2 = factor(1:2,labels=c("a","b")), 
@@ -228,9 +228,9 @@ model = "~ F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9 + F10 + F11"
 treatments = expand.grid(Variety = factor(rep(1:2)), N = 1:3, K = 1:3)
 blocks=data.frame(main=gl(1,12))
 treatments_model = " ~  (Variety + N + K)^2  + I(N^2) + I(K^2)"
-design(treatments,blocks,treatments_model=treatments_model,searches=10) 
+\donttest{design(treatments,blocks,treatments_model=treatments_model,searches=10)} 
 treatments_model = " ~ Variety | (Variety + N + K)^2 + I(N^2) + I(K^2)"
-design(treatments,blocks,treatments_model=treatments_model,searches=10)
+\donttest{design(treatments,blocks,treatments_model=treatments_model,searches=10)}
 
 ## 8 varieties x 4 levels of N x 4 levels of K assuming 1st-order interactions and 2 blocks
 ## of size 16, A two stage treatment model gives fully orthogonal blocks with

@@ -2,8 +2,8 @@ Package: blocksdesign
 Type: Package
 Title: Nested and Crossed Block Designs for Factorial, Fractional
         Factorial and Unstructured Treatment Sets
-Version: 3.6
-Date: 2019-10-08"
+Version: 3.7
+Date: 2019-10-22"
 Author: R. N. Edmondson.
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
@@ -28,6 +28,6 @@ Encoding: UTF-8
 Suggests: knitr, rmarkdown, R.rsp
 VignetteBuilder: knitr,R.rsp
 NeedsCompilation: no
-Packaged: 2019-10-08 18:58:36 UTC; rne
+Packaged: 2019-10-22 08:19:27 UTC; rne
 Repository: CRAN
-Date/Publication: 2019-10-08 19:30:02 UTC
+Date/Publication: 2019-10-22 08:50:02 UTC

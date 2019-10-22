@@ -2,22 +2,22 @@
 #'
 #' @description
 #'
-#' Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
+#' Constructs randomized nested block designs for unstructured treatment sets and any feasible depth of nesting.
 #'
 #' @details
 #'
 #' Constructs randomized nested block designs with arbitrary depth of nesting for arbitrary unstructured treatment sets.
 #' 
-#' The \code{treatments} parameter is a set of numbers that partitions the total number of treatments into equally 
-#' replicated treatment sets while the \code{replicates} parameter is a matching set of numbers that defines the 
-#' replication of each equally replicated treatment set.
+#' The \code{treatments} parameter is a set of numbers that gives a partition of the total number of treatments
+#'  while the \code{replicates} parameter is a matching set of numbers that defines the 
+#' replication of each treatment set in the partition.
 #' 
 #' The \code{blocks} parameter, if any, defines the number of blocks for each level of nesting from the highest
 #' to the lowest. The first number, if any, is the number of nested row blocks in the first-level of nesting, 
 #' the second number, if any, is the number of nested row blocks in
 #' the second-level of nesting and so on down to any required feasible depth of nesting.
 #'
-#' Block sizes are as nearly equal as possible and will never differ by more than a single plot for any 
+#' Block sizes are as nearly equal as possible and will never differ by more than a single plot in any 
 #' particular block classification. 
 #'
 #' Unreplicated treatments are allowed and any simple nested block design can be augmented by any number 
@@ -30,8 +30,9 @@
 #' Square lattice designs are constructed algebraically from Latin squares or MOLS.
 #'
 #' Rectangular lattice designs are resolvable incomplete block designs for r replicates of (p-1)*p treatments 
-#' arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Currently, rectangular lattices are
-#' constructed algorithmically and optimality is not guaranteed.
+#' arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Rectangular lattice designs are
+#' constructed algebraically by reducing an algebraic square lattice, see 
+#' Cochran and Cox, Experimental Designs. 2nd Edition. Page 417 (Shrikhande method).
 #'
 #' Outputs:
 #'
@@ -107,24 +108,104 @@
 #' @importFrom stats coef anova lm model.matrix as.formula setNames 
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
- 
-  # **************************************************************************************************
+   
+   
+  # ***********************************************************************************************
+  # Block design efficiency factors
+  # *********************************************************************************************** 
+   blockEstEffics=function(TF,BF) {
+     if (nlevels(BF)==1) return(c(1,1))
+     if (is.data.frame(TF))TF=TF[,1]
+     if (is.data.frame(BF)) BF=BF[,1]
+     TM  = scale(model.matrix(~ TF))[,-1]
+     BMO = scale(model.matrix(~ BF))[,-1]
+     TMO = qr.Q(qr(TM)) # orthogonal basis for TM 
+     BMO = qr.Q(qr(BMO)) # orthogonal basis for BM
+     
+     if (nlevels(TF)<=nlevels(BF)) 
+       E=eigen(diag(ncol(TMO))-tcrossprod(crossprod(TMO,BMO)),symmetric=TRUE,only.values = TRUE)
+      else E=eigen(diag(ncol(BMO))-tcrossprod(crossprod(BMO,TMO)),symmetric=TRUE,only.values = TRUE)
+     
+     Deff=prod(E$values)**(1/ncol(TMO))
+     
+     if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TMO)/sum(1/E$values)
+      else Aeff=ncol(TMO)/(ncol(TMO)-ncol(BMO) + sum(1/E$values) )
+
+     return(list(Deffic= round(Deff,7), Aeffic=round(Aeff,7)))
+   }
+   
+ # ***********************************************************************************************
+ # Tests for and constructs squarelattice designs
+ #  Allocates v*v treatments to blocks assuming a lattice design with r complete replicate blocks
+ #  and nested blocks of size v. Returns a simple lattice for r=2 or a triple lattice for 
+ #  r=3 for any size of v. Returns a lattice for any r < v + 2 if v is prime or any prime power 
+ # where primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) and
+ #  powers=c(12,7,5,4,3,3,3,3,rep(2,17)). Returns a triple lattice for v=10 and r=4. 
+ # ***********************************************************************************************
+   squarelattice=function(v,u) {
+     PP=isPrimePower(v)
+     p=PP$base
+     q=PP$power
+     primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) 
+     powers=c(12,7,5,4,3,3,3,3,rep(2,17))
+     ppLat = ( p%in%primes)
+     if (ppLat) qmax=powers[which(primes == p)] else qmax=0
+     
+     if (ppLat & q>1 & q<=qmax & u>1)   {
+       mols=MOLS(p,q,u)    #  lattice designs for prime powers where q > 1 and r > 3  
+     } else if ( (isPrime(v) & u<v) | u < 2) {
+       # cyclic designs for any prime v with r < v+2 or any v with r<4 
+       mols=sapply(0:u,function(z){ sapply(0:(v-1), function(j){ (rep(0:(v-1))*z +j)%%v}) })
+       mols=data.frame(row=rep(1:v,v),mols+1) 
+     } else if (v==10 & u<3 & u>0) {
+       #  lattice design for v = 10 and r =3 or r= 4 
+       square1=       c(1,    8,    9,    2,    0,    5,    3,    6,    4,     7,
+                        9,    1,    0,    4,    2,    7,    8,    5,    3,     6,
+                        0,    3,    1,    6,    8,    9,    7,    4,    2,     5,
+                        3,    7,    4,    1,    5,    2,    6,    9,    8,     0,
+                        8,    9,    5,    0,    1,    6,    4,    2,    7,     3,
+                        2,    6,    3,    7,    4,    1,    5,    8,    0,     9,
+                        5,    2,    6,    3,    7,    4,    1,    0,    9,     8,
+                        4,    0,    7,    5,    3,    8,    9,    1,    6,     2,
+                        7,    5,    8,    9,    6,    0,    2,    3,    1,     4,
+                        6,    4,    2,    8,    9,    3,    0,    7,    5,     1)
+       square2 =      c(1,    3,    5,    4,    2,    6,    7,    8,    9,     0,
+                        3,    4,    8,    6,    7,    9,    1,    5,    0,     2,
+                        5,    6,    7,    0,    9,    1,    4,    3,    2,     8,
+                        9,    8,    1,    2,    3,    0,    5,    6,    7,     4,
+                        2,    0,    4,    1,    6,    7,    8,    9,    5,     3,
+                        8,    1,    2,    3,    0,    5,    9,    4,    6,     7,
+                        0,    5,    9,    8,    1,    2,    3,    7,    4,     6,
+                        4,    9,    6,    7,    5,    8,    2,    0,    3,     1,
+                        7,    2,    0,    9,    4,    3,    6,    1,    8,     5,
+                        6,    7,    3,    5,    8,    4,    0,    2,    1,     9)
+       
+       mols=data.frame(row=rep(1:v,v),col=rep(1:v,each=v),square1+1)
+       if (u==2) mols=cbind(mols,square2+1)
+     } else return(NULL)
+     
+     TF=factor(sapply(1:(u+2),function(i){seq_len(v*v)[order(as.numeric(mols[[i]]))]}))
+     df=data.frame(Reps=rep(sample(1:(u+2)),each=(v*v)),Blocks=rep(sample(1:(v*(u+2))),each=v),Plots=sample(1:(v*v*(u+2))),TF)
+     df=df[ do.call(order, df), ]
+     return(df[,4])
+   }
+   
+   # **************************************************************************************************
   # Tests for and constructs rectangularlattice designs
   # ***************************************************************************************************
   rectlattice=function(v,r) {
-    mols=lattices(v,r-2)
-    print(mols)
-    r1=sample(1:v)
-    mols=lapply(1:length(mols),function(i){mols[[i]][r1,r1]})
-    mols=mols[sapply(1:length(mols),function(z){ isTRUE(all.equal(sort(diag(mols[[z]])),(0:(v-1)) ))})]
-    if(length(mols)<r) return(NULL)
-    for (i in 1:length(mols)) diag(mols[[i]])=NA
-    TF=factor(unlist(lapply(1:r,function(i){seq_len(v*v)[order(as.numeric(mols[[i]]), na.last = NA)]})))
-    for (i in 1:(v-1)) levels(TF)[levels(TF)==i+v*(v-1)] = v*(i-1) + i
-    TF = factor(TF, levels = c(1:nlevels(TF)))
-    df=data.frame(Reps=rep(sample(1:r),each=(v*(v-1))),Blocks=rep(sample(1:(v*r)),each=(v-1)),Plots=sample(1:((v-1)*v*r)),TF)
-    TF=df[ do.call(order, df), ][,4]
-    return(TF)
+    
+    LT=squarelattice(v,r-1)
+    if (is.null(LT)) return(NULL)
+    LT=split(LT, factor(rep(1:((r+1)*v), each=v))) 
+    drop=factor((v*(v-1)+1) : (v*v))
+    dropblock=which(sapply (1:length(LT), function(i) all(drop%in%LT[[i]]))   )
+    droprep=(dropblock-1)%/%v + 1
+    omitblocks=((droprep-1)*v + 1):(droprep*v)
+    LT[omitblocks]=NULL
+    LT=unlist(LT)
+    LT=(droplevels(LT[!LT%in%drop]))
+    return(LT)
   }
   # ***************************************************************************************************
   # Maximises the design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the 
@@ -188,6 +269,7 @@
   }  
   # *******************************************************************************************************************
   #  Searches for an optimization with selected number of searches and selected number of junps to escape local optima
+  # nested blocks only
   # ********************************************************************************************************************
   Optimise=function(TF,MF,BF,VTT,VBB,VTB,TM,BM) {
     fBF=interaction(MF:BF)
@@ -211,7 +293,7 @@
           globTF=TF 
           globrelD=relD
           if (!is.na(blocksEffBound)) {
-            reff=EstEffics(globTF,fBF)[2]
+            reff=blockEstEffics(globTF,fBF)[2]
             if (isTRUE(all.equal(blocksEffBound,reff))) return(globTF)
           }  
         }
@@ -320,7 +402,7 @@
   BlockEfficiencies=function(Design) {
     effics=matrix(NA,nrow=(ncol(Design)-2),ncol=2)
     for (i in seq_len(ncol(Design)-2)) 
-      effics[i,]=unlist(EstEffics(Design[,ncol(Design)],Design[,i]))
+      effics[i,]=unlist(blockEstEffics(Design[,ncol(Design)],Design[,i]))
     bounds=rep(NA,(ncol(Design)-2))
     if (regReps)
       for (i in seq_len(ncol(Design)-2))
@@ -395,10 +477,10 @@
   if (regReps & regBlocks & replicates[1]==blocks[1] & length(blocks)==2) { 
   s=sqrt(ntrts)  # dimension of a square lattice 
   Lattice=(identical(s,floor(s)) & replicates[1]<(s+2) & k==s)
-  if (Lattice) TF=lattices(s,(replicates[1]-2)) 
- # s=(sqrt(1+4*ntrts)+1)/2 # dimension of a rectangular lattice 
- # rectLat=(identical(s,floor(s)) & replicates[1]<(s+1) & k==(s-1))
- # if (rectLat) TF=rectlattice(s,replicates[1])
+  if (Lattice) TF=squarelattice(s,(replicates[1]-2)) 
+  s=(sqrt(1+4*ntrts)+1)/2 # dimension of a rectangular lattice 
+ rectLat=(identical(s,floor(s)) & replicates[1]<(s+1) & k==(s-1))
+  if (rectLat) TF=rectlattice(s,replicates[1])
   }
   
   if (is.null(TF)) {
@@ -415,6 +497,7 @@
    }
   }
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - try a simpler block or treatment design")
+  
     NestDesign=data.frame(sapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i])}),Plots=factor(1:nunits),TF)
     Efficiencies=BlockEfficiencies(NestDesign) 
     Design=data.frame(blkDesign,Plots=factor(1:nunits),Treatments=TF)[,-1,drop=FALSE]

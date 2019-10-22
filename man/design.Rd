@@ -8,8 +8,8 @@ design(treatments, blocks = NULL, treatments_model = NULL,
   weighting = 0.5, searches = NULL, seed = NULL, jumps = 1)
 }
 \arguments{
-\item{treatments}{a single treatment factor or data frame containing one or more qualitative or 
-quantitative (numeric) level treatment factors.}
+\item{treatments}{a single treatment factor or data frame containing any combination of qualitative level treatment factors
+and numeric level treatment vectors.}
 
 \item{blocks}{a single block factor or data frame containing one or more qualitative level block
 factors in the required order of fitting.}
@@ -45,8 +45,9 @@ Constructs D-optimal block and treatment designs for any feasible combinations o
 factors and any feasible linear treatment model.
 }
 \details{
-The \code{treatments} object is a factor or a data frame containing one or more qualitative or quantitative 
-level treatment factors defining a set of candidate treatments from which the optimized treatment design is selected.
+The \code{treatments} object is a factor or a data frame containing one or more qualitative
+level treatment factors or quantitative level treatment vectors defining a set of candidate treatments
+ from which the optimized treatment design is selected.
 
 The \code{blocks} object is a factor or a data frame containing one or more qualitative level block factors. The default
 \code{blocks} object is a single level factor equal in length to the \code{treatments} object. The size of the \code{blocks}
@@ -56,7 +57,7 @@ The \code{treatments_model} can be either a single formula for a single design m
 or a compound formula for two or more design matrices. A compound formula contains one or more occurrences of a splitting 
 operator \code{|} which splits-off a partial design formula on the left hand side of each \code{|}.
 Assuming the left hand part of each split is a well defined model design formula and replacing all remaining \code{|} 
-by \code{+} in each partial design formula gives a hierarchical set of design matrices for sequential model fitting. 
+by \code{+} in each partial design formula gives a hierarchical set of treatment design matrices for sequential model fitting. 
 The advantage of sequential model fitting is that it provides improved flexibility
 for fitting factors or variables of different status or importance and allows a wider range of choices
 of optimized design for different situations (see examples below).
@@ -110,13 +111,13 @@ For more details see \code{vignette(package = "blocksdesign")}
 # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
 treatments = factor(1:12)
 blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
-\donttest{design(treatments,blocks)}
+design(treatments,blocks)
 
 ## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
 ## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
 treatments = factor(1:12)
 blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48))
-\donttest{design(treatments,blocks)}
+design(treatments,blocks)
 
 ## 4 x 12 design for 4 replicates of 12 treatments with 3 sub-column blocks nested 
 ## as above but showing 3 sub-columns nested within each main column
@@ -143,11 +144,10 @@ treatments=factor(1:48)
 blocks = data.frame(Reps = gl(2,48),Cols = gl(3,8,96),Rows = gl(2,24,96))
 design(treatments,blocks,searches=5)
 
-
 ## Factorial treatment designs defined by a single factorial treatment model
 
 ## Main effects of five 2-level factors in a half-fraction in 2/2/2 nested blocks design 
-## (may require many 100's of repeats to find a fully orthogonal solution)
+## (may require 100's of repeats to find a fully orthogonal solution - a VERY long wait!)
 treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:2),
  F3 = factor(1:2), F4 = factor(1:2), F5 = factor(1:2))
 blocks = data.frame(b1 = gl(2,8),b2 = gl(4,4),b3 = gl(8,2))
@@ -231,16 +231,6 @@ treatments_model = " ~  (Variety + N + K)^2  + I(N^2) + I(K^2)"
 \donttest{design(treatments,blocks,treatments_model=treatments_model,searches=10)} 
 treatments_model = " ~ Variety | (Variety + N + K)^2 + I(N^2) + I(K^2)"
 \donttest{design(treatments,blocks,treatments_model=treatments_model,searches=10)}
-
-## 8 varieties x 4 levels of N x 4 levels of K assuming 1st-order interactions and 2 blocks
-## of size 16, A two stage treatment model gives fully orthogonal blocks with
-## no loss of treatment efficiency comapred with a single stage treatment design
-treatments = expand.grid(variety = factor(1:8), N = 1:4, K = 1:4)
-blocks=data.frame(blocks=gl(2,16,32))
-treatments_model = "~ (variety + N + K)^2  + I(N^2) + I(K^2) + I(N^3) + I(K^3)"
-\donttest{design(treatments,blocks,treatments_model=treatments_model,searches=50)}
-treatments_model = "~variety | (variety + N + K)^2   + I(N^2) + I(N^3) + I(K^2)+ I(K^3)"
-\donttest{design(treatments,blocks,treatments_model=treatments_model,searches=50)}
 
 ## A 6 x 6 row-and-column design with linear row by linear column interaction.
 ## Crossed blocks with interactions fitted in the treatments model and additive 

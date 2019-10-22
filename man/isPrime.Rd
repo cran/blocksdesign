@@ -7,16 +7,17 @@
 isPrime(v)
 }
 \arguments{
-\item{v}{is the number to be tested for primality}
+\item{v}{the number to be tested for primality}
 }
 \value{
 logical TRUE or FALSE
 }
 \description{
-Tests if a given number v is prime and returns TRUE or FALSE
+Tests if a given number is prime and returns TRUE or FALSE
 }
 \details{
-primality of any positive integer based on the fact that all primes except 2 and 3 can be expressed as 6k-1 or 6k+1
+Tests for the primality of any positive integer using the fact that all primes except 2 and 3 can be
+expressed as 6k-1 or 6k+1 for integer k.
 }
 \examples{
 

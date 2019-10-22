@@ -34,21 +34,21 @@ as the design size increases.}
 \item{jumps}{Number of random treatment swaps used to escape a local maxima.}
 }
 \description{
-Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
+Constructs randomized nested block designs for unstructured treatment sets and any feasible depth of nesting.
 }
 \details{
 Constructs randomized nested block designs with arbitrary depth of nesting for arbitrary unstructured treatment sets.
 
-The \code{treatments} parameter is a set of numbers that partitions the total number of treatments into equally 
-replicated treatment sets while the \code{replicates} parameter is a matching set of numbers that defines the 
-replication of each equally replicated treatment set.
+The \code{treatments} parameter is a set of numbers that gives a partition of the total number of treatments
+ while the \code{replicates} parameter is a matching set of numbers that defines the 
+replication of each treatment set in the partition.
 
 The \code{blocks} parameter, if any, defines the number of blocks for each level of nesting from the highest
 to the lowest. The first number, if any, is the number of nested row blocks in the first-level of nesting, 
 the second number, if any, is the number of nested row blocks in
 the second-level of nesting and so on down to any required feasible depth of nesting.
 
-Block sizes are as nearly equal as possible and will never differ by more than a single plot for any 
+Block sizes are as nearly equal as possible and will never differ by more than a single plot in any 
 particular block classification. 
 
 Unreplicated treatments are allowed and any simple nested block design can be augmented by any number 
@@ -61,8 +61,9 @@ arranged in blocks of size p where r < p+2 for prime or prime power p or r < 4 f
 Square lattice designs are constructed algebraically from Latin squares or MOLS.
 
 Rectangular lattice designs are resolvable incomplete block designs for r replicates of (p-1)*p treatments 
-arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Currently, rectangular lattices are
-constructed algorithmically and optimality is not guaranteed.
+arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Rectangular lattice designs are
+constructed algebraically by reducing an algebraic square lattice, see 
+Cochran and Cox, Experimental Designs. 2nd Edition. Page 417 (Shrikhande method).
 
 Outputs:
 

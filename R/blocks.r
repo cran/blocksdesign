@@ -2,7 +2,7 @@
 #'
 #' @description
 #'
-#' Constructs randomized nested block designs for unstructured treatment sets and any feasible depth of nesting.
+#' Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
 #'
 #' @details
 #'
@@ -44,18 +44,15 @@
 #' \item  A plan showing the allocation of treatments to blocks in the bottom level of the design.\cr
 #' }
 #'
-#' @param treatments  a partition of the total required number of treatments into equally replicated treatment sets, possibly a complete
-#' partition into individual treatments.
+#' @param treatments  the required number of treatments partitioned into sets of equally replicated treatments.
 #'
-#' @param replicates  a set of treatment replication numbers with one replication number for each partitioned treatment set, possibly a 
-#' complete set of treatment replication numbers.
+#' @param replicates  the treatment replication numbers for each partitioned treatment set.
 #'
-#' @param blocks the number of blocks nested in each preceding block for each level of nesting from the top-level block downwards.
+#' @param blocks the number of nested blocks for each level of nesting from the top down.
 #' 
 #' @param seed an integer initializing the random number generator. The default is a random seed.
 #'
-#' @param searches the maximum number of local optima searched for a design optimization. The default number decreases
-#' as the design size increases.
+#' @param searches the maximum number of local optima searched for a design optimization. 
 #'
 #' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.
 #'
@@ -81,34 +78,36 @@
 #' 
 #' # 12 treatments x 4 replicates in 4 complete blocks with 4 sub-blocks of size 3
 #' # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
-#' \donttest{blocks(treatments=12,replicates=4,blocks=c(4,4))}
+#' \donttest{blocks(treatments=12,replicates=4,blocks=list(4,4))}
 #'
 #' # 3 treatments x 2 replicates + 2 treatments x 4 replicates in two complete randomized blocks
-#' blocks(treatments=c(3,2),replicates=c(2,4),searches=10)
+#' blocks(treatments=list(3,2),replicates=list(2,4),blocks=2,searches=10)
 #'
 #' # 50 treatments x 4 replicates with 4 main blocks and 5 nested sub-blocks in each main block
-#' blocks(treatments=50,replicates=4,blocks=c(4,5))
+#' blocks(treatments=50,replicates=4,blocks=list(4,5))
 #'
 #' # as above but with 20 additional single replicate treatments, one single treatment per sub-block
-#' \donttest{blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))}
+#' \donttest{blocks(treatments=list(50,20),replicates=list(4,1),blocks=list(4,5))}
 #' 
 #' # 6 replicates of 6 treatments in 4 blocks of size 9 (non-binary block design)
 #' blocks(treatments=6,replicates=6,blocks=4)
 #'
 #' # 128 treatments x 2 replicates with two main blocks and 3 levels of nesting
-#'  \donttest{blocks(128,2,c(2,2,2,2))}
+#'  \donttest{blocks(128,2,list(2,2,2,2))}
 #' 
 #' #' # 64 treatments x 4 replicates with 4 main blocks nested blocks of size 8 (lattice square)
-#' blocks(64,4,c(4,8)) 
+#' blocks(64,4,list(4,8)) 
 #' 
 #' # 100 treatments x 4 replicates with 4 main blocks nested blocks of size 10 (lattice square)
-#' blocks(100,4,c(4,10)) 
+#' blocks(100,4,list(4,10)) 
 #' 
 #' @export
 #' @importFrom stats coef anova lm model.matrix as.formula setNames 
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
-   
+   if (is.list(treatments)) treatments=unlist(treatments)
+   if (is.list(blocks)) blocks=unlist(blocks)
+   if (is.list(replicates)) replicates=unlist(replicates)
    
   # ***********************************************************************************************
   # Block design efficiency factors
@@ -131,7 +130,7 @@
      if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TMO)/sum(1/E$values)
       else Aeff=ncol(TMO)/(ncol(TMO)-ncol(BMO) + sum(1/E$values) )
 
-     return(list(Deffic= round(Deff,7), Aeffic=round(Aeff,7)))
+     return(list(Deffic= round(Deff,5), Aeffic=round(Aeff,5)))
    }
    
  # ***********************************************************************************************
@@ -194,7 +193,6 @@
   # Tests for and constructs rectangularlattice designs
   # ***************************************************************************************************
   rectlattice=function(v,r) {
-    
     LT=squarelattice(v,r-1)
     if (is.null(LT)) return(NULL)
     LT=split(LT, factor(rep(1:((r+1)*v), each=v))) 
@@ -327,7 +325,6 @@
     }
     return(globTF)
   }
-  
   # ********************************************************************************************************************
   # Random swaps
   # ********************************************************************************************************************    
@@ -343,7 +340,6 @@
     if ( length(candidates)>1) s2=sample(candidates,1) else s2=candidates[1] 
     return(c(s1,s2))
   } 
-
   # *******************************************************************************************************************
   # Initial randomized starting design. If the initial design is rank deficient, random swaps with 
   # positive selection are used to to increase design rank
@@ -409,7 +405,7 @@
         if (nunits%%nlevels(Design[,i])==0 )
           bounds[i]=A_bound(nunits,nlevels(Design[,ncol(Design)]),nlevels(Design[,i]) )
     blocklevs=unlist(lapply(1:(ncol(Design)-2), function(j) {nlevels(Design[,j])}))
-    efficiencies=data.frame(cbind(labels(blocks),blocklevs,effics,bounds))
+    efficiencies=data.frame(cbind(labels(blocks),blocklevs,effics,round(bounds,5)))
     colnames(efficiencies)=c("Level","Blocks","D-Efficiency","A-Efficiency", "A-Bound")
     return(efficiencies)
   }
@@ -497,14 +493,15 @@
    }
   }
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - try a simpler block or treatment design")
-  
     NestDesign=data.frame(sapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i])}),Plots=factor(1:nunits),TF)
     Efficiencies=BlockEfficiencies(NestDesign) 
+    
     Design=data.frame(blkDesign,Plots=factor(1:nunits),Treatments=TF)[,-1,drop=FALSE]
     V = split(Design[,ncol(Design)],NestDesign[,(ncol(NestDesign)-2)])
     V = lapply(V, function(x){ length(x) =max(blocksizes); x })
     Plan = data.frame(blkdesign[,-1 ,drop=FALSE],rep("",length(V)),matrix(unlist(V),nrow=length(V),byrow=TRUE))
     colnames(Plan)=c(colnames(blkdesign[,-1 ,drop=FALSE]),"Blocks.Plots:", c(1:max(blocksizes)))
+    
     row.names(Plan)=NULL
     row.names(Design)=NULL
     row.names(Efficiencies)=NULL

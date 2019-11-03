@@ -7,7 +7,7 @@
 isPrimePower(N)
 }
 \arguments{
-\item{N}{is the number to be tested for primality}
+\item{N}{the number to be tested for primality}
 }
 \value{
 Returns the base prime p and the power q if N is a prime power; otherwise returns p = 0  and q = 0.

@@ -2,26 +2,26 @@
 % Please edit documentation in R/hcf.R
 \name{HCF}
 \alias{HCF}
-\title{Find hcf}
+\title{Finds hcf of any set of positive integers}
 \usage{
-HCF(v)
+HCF(...)
 }
 \arguments{
-\item{v}{is the vector of integers for which the hcf is required (must be integers)}
+\item{...}{any set of positive integers, in any order, for which the hcf is required.}
 }
 \value{
 hcf
 }
 \description{
-Finds the highest common factor (hcf) of a set of integer numbers greater than zero (Euclidean algorithm)
+Finds the highest common factor (hcf) of a set of integer numbers greater than zero (Euclidean algorithm).
 }
 \details{
-Finds the hcf of a vector of positive integers which can be in any order
+Finds the hcf of any set of positive integers which can be in any order.
 }
 \examples{
 
 # hcf of vectors of integers
-HCF(c(56,77,616))
-HCF(c(3,56,77,616))  
+HCF(56,77,616)
+HCF(3,56,77,616) 
 
 }

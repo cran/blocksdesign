@@ -19,10 +19,18 @@ Data frame of factor levels for rows, columns and treatmnent sets
 \description{
 Constructs sets of mutually orthogonal Latin squares (MOLS) of dimension p**q where p is 
 prime. The number of squares r can be any number less than p**q and the exponent q can
-be any value from 1 up to a maximum dependent on the choice of p, viz:
+be any value from 1 up to a maximum dependent on the choice of p. The permitted values of p and q are:
 
- q < 13 for p = 2; q < 8 for p = 3; q < 6 for p = 5; q < 5 for p = 7;
- q < 4 for p = 11, 13, 17, 19; q < 3 for any other p < 100; q = 1 for any other p > 100.
+  \tabular{rrrrrrrr}{
+   \bold{prime p} \tab                                       \bold{maximum q}\cr
+   2 \tab                                                                12\cr
+   3 \tab                                                                 7\cr
+   5 \tab                                                                 5\cr                                                      
+   7 \tab                                                                 4\cr
+   11 13 17 19 \tab                                                       3\cr
+   23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 \tab                2\cr
+   101 103 107 etc.  \tab                                                 1
+   }
 }
 \details{
 Generates MOLS by cyclic permuation of a basic Latin square L0 constructed

@@ -8,16 +8,13 @@ blocks(treatments, replicates, blocks = NULL, searches = NULL,
   seed = NULL, jumps = 1)
 }
 \arguments{
-\item{treatments}{a partition of the total required number of treatments into equally replicated treatment sets, possibly a complete
-partition into individual treatments.}
+\item{treatments}{the required number of treatments partitioned into sets of equally replicated treatments.}
 
-\item{replicates}{a set of treatment replication numbers with one replication number for each partitioned treatment set, possibly a 
-complete set of treatment replication numbers.}
+\item{replicates}{the treatment replication numbers for each partitioned treatment set.}
 
-\item{blocks}{the number of blocks nested in each preceding block for each level of nesting from the top-level block downwards.}
+\item{blocks}{the number of nested blocks for each level of nesting from the top down.}
 
-\item{searches}{the maximum number of local optima searched for a design optimization. The default number decreases
-as the design size increases.}
+\item{searches}{the maximum number of local optima searched for a design optimization.}
 
 \item{seed}{an integer initializing the random number generator. The default is a random seed.}
 
@@ -34,7 +31,7 @@ as the design size increases.}
 \item{jumps}{Number of random treatment swaps used to escape a local maxima.}
 }
 \description{
-Constructs randomized nested block designs for unstructured treatment sets and any feasible depth of nesting.
+Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
 }
 \details{
 Constructs randomized nested block designs with arbitrary depth of nesting for arbitrary unstructured treatment sets.
@@ -83,28 +80,28 @@ Outputs:
 
 # 12 treatments x 4 replicates in 4 complete blocks with 4 sub-blocks of size 3
 # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
-\donttest{blocks(treatments=12,replicates=4,blocks=c(4,4))}
+\donttest{blocks(treatments=12,replicates=4,blocks=list(4,4))}
 
 # 3 treatments x 2 replicates + 2 treatments x 4 replicates in two complete randomized blocks
-blocks(treatments=c(3,2),replicates=c(2,4),searches=10)
+blocks(treatments=list(3,2),replicates=list(2,4),blocks=2,searches=10)
 
 # 50 treatments x 4 replicates with 4 main blocks and 5 nested sub-blocks in each main block
-blocks(treatments=50,replicates=4,blocks=c(4,5))
+blocks(treatments=50,replicates=4,blocks=list(4,5))
 
 # as above but with 20 additional single replicate treatments, one single treatment per sub-block
-\donttest{blocks(treatments=c(50,20),replicates=c(4,1),blocks=c(4,5))}
+\donttest{blocks(treatments=list(50,20),replicates=list(4,1),blocks=list(4,5))}
 
 # 6 replicates of 6 treatments in 4 blocks of size 9 (non-binary block design)
 blocks(treatments=6,replicates=6,blocks=4)
 
 # 128 treatments x 2 replicates with two main blocks and 3 levels of nesting
- \donttest{blocks(128,2,c(2,2,2,2))}
+ \donttest{blocks(128,2,list(2,2,2,2))}
 
 #' # 64 treatments x 4 replicates with 4 main blocks nested blocks of size 8 (lattice square)
-blocks(64,4,c(4,8)) 
+blocks(64,4,list(4,8)) 
 
 # 100 treatments x 4 replicates with 4 main blocks nested blocks of size 10 (lattice square)
-blocks(100,4,c(4,10)) 
+blocks(100,4,list(4,10)) 
 
 }
 \references{

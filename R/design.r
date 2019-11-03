@@ -84,7 +84,6 @@
 #' 
 #' For more details see \code{vignette(package = "blocksdesign")}  
 #' 
-#' 
 #' @return
 #' \item{treatments}{The treatments included in the design and the replication of each individual 
 #' treatment taken in de-randomized standard order.}
@@ -100,7 +99,6 @@
 #' @references
 #' 
 #' Cochran W. G. & Cox G. M. (1957) Experimental Designs 2nd Edition John Wiley & Sons.
-#' 
 #' 
 #' @examples
 #' 
@@ -135,13 +133,19 @@
 #' blocks = data.frame(Main = gl(2,18),  Sub = gl(12,3,36))
 #' design(treatments,blocks,searches = 5)
 #' 
-#' ## 48 treatments in 2 replicate blocks of size 48 for a 24 x 4 array 
-#' ## with 2 main rows and 3 main columns the cols factor must precede 
-#' ## the rows factor otherwise the design will confound one treatment contrast
-#' ## in the replicates.rows x columns interactions due to inherent aliasing 
+#' ## 48 treatments in 2 replicate blocks with 2 nested rows in each replicate and 3 main columns
+#' ##  (Reps/Rows) x Cols
 #' treatments=factor(1:48)
-#' blocks = data.frame(Reps = gl(2,48),Cols = gl(3,8,96),Rows = gl(2,24,96))
+#' blocks = data.frame(Reps = gl(2,48), Rows = gl(4,24,96), Cols = gl(3,8,96))
 #' design(treatments,blocks,searches=5)
+#' 
+#' ## 48 treatments in 2 replicate blocks with 2 main columns
+#' ## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
+#' ## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
+#' treatments=factor(1:48)
+#' blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
+#' design(treatments,blocks,searches=5)
+#' design(treatments,blocks,searches=5,weighting=.9)
 #' 
 #' ## Factorial treatment designs defined by a single factorial treatment model
 #' 
@@ -256,55 +260,15 @@
     if (!is.null(seed)) set.seed(seed) 
     
     # *********************************************************************************************************************
-    # Finds D-efficiency factors for nested and crossed block effects at each level of a nested blocks design.
-    # For crossed blocks, the algorithm also finds the D-efficiency of the intersection blocks of the crossed 
-    # block factors assuming non-singular blocks. For nested block designs, the algorithm finds both the 
-    # D-efficiency and the A-efficiency of the nested blocks and for regular nested blocks, A-efficieny
-    # upper bounds are given, see John & Williams (1998).   
+    #  Full rank
     # *********************************************************************************************************************
-    blockEfficiencies=function(TF,BF,TM) {
-      TF=data.frame(TF)
-      BF=data.frame(BF)
-      prodfactors=unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="*")}) )
-      addfactors =unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")}) )
-      D_Effic=rep(0,length=ncol(BF))
-      A_Effic=rep(0,length=ncol(BF))
-      Int_levs=rep(0,length=ncol(BF))
-      Add_levs=rep(0,length=ncol(BF))
-      D_IntEff=rep(0,length=ncol(BF))
-      A_IntEff=rep(0,length=ncol(BF))
-      IBF=data.frame(lapply (1:ncol(BF), function(i) droplevels(interaction(BF[,c(1:i)]))))
-      for (i in 1:ncol(BF)) {
-        Model = scale(model.matrix(as.formula(paste("~", paste0(colnames(BF)[1:i],collapse="+"))),BF) )[,-1,drop=FALSE]
-        D_Effic[i]=0
-        A_Effic[i]=0
-        Q=qr(Model)
-        Model = Model[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
-        Add_levs[i] = ncol(Model)
-        if (qr(cbind(TM,Model))$rank < ncol(cbind(TM,Model))) next # singular
-        Model = qr.Q(qr(Model)) # orthogonal basis
-        E=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,Model)),symmetric=TRUE,only.values = TRUE)
-        D_Effic[i]=prod(E$values)**(1/ncol(TM))
-        A_Effic[i]=ncol(TM)/sum(1/E$values)
-      }
-      for (i in 1:ncol(BF)) {
-        Model = scale(model.matrix(as.formula(~ IBF[,i]), IBF))[,-1,drop=FALSE]
-        D_IntEff[i]=0
-        A_IntEff[i]=0
-        if (qr(cbind(TM,Model))$rank < ncol(cbind(TM,Model))) next # singular
-        Model = qr.Q(qr(Model)) # orthogonal basis
-        Int_levs[i]=ncol(Model)
-        E=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,Model)),symmetric=TRUE,only.values = TRUE)
-        D_IntEff[i]=prod(E$values)**(1/ncol(TM))
-        A_IntEff[i]=ncol(TM)/sum(1/E$values)
-      }
-      Effics1=data.frame(Additive_Model=addfactors,effects=Add_levs,"D-Efficiency"= D_Effic,"A-Efficiency"= A_Effic,
-                         stringsAsFactors = FALSE,check.names = FALSE)
-      Effics2=data.frame(Multiplicative_Model=prodfactors,effects=Int_levs,"D-Efficiency"= D_IntEff,"A-Efficiency"= A_IntEff,
-                         stringsAsFactors = FALSE,check.names = FALSE)
-      Effics=cbind(Effics1,Effics2)
-      return(Effics)
+    fullrankModel=function(TF,model_formula) {
+      TM=model.matrix(as.formula(model_formula),TF)
+      Q = qr(TM)
+      TM = TM[,Q$pivot[1:Q$rank],drop=FALSE] # full rank
+      return(TM)
     }
+    
     # *********************************************************************************************************************
     #  dMat is a matrix where the ith, jth matrix element is the change in the D-max criterion of the block design 
     # due to swapping ith and jth treatments of a sample s of the set of plots 
@@ -394,24 +358,35 @@
       return(list(TF=TF,TM=TM,fullrank=FALSE))
     }
     # ************************************************************************************************************************
-    # Optimize the nested blocks assuming a possible set of Main block constraints Initial randomized starting design.
+    # Optimize the  blocks assuming a possible set of Main block constraints Initial completely randomized starting design.
     # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
     # Each factor in BF may include levels from preceding factors hence qr pivoting is essential to sweep out factor dependencies  
     # ************************************************************************************************************************
      blocksOpt=function(TF,TM,BF,searches) {
       IBF=data.frame(factor(rep(1,nrow(TF))),lapply(1:ncol(BF), function(i) droplevels(interaction(BF[,c(1:i)]))))
       colnames(IBF)=c("mean",unlist(lapply(1:ncol(BF),function(j){paste0(colnames(BF)[1:j],collapse=".")})))
+      D_Effic=rep(0,length=ncol(BF))
+      A_Effic=rep(0,length=ncol(BF))
+      D_IntEff=rep(0,length=ncol(BF))
+      A_IntEff=rep(0,length=ncol(BF))
+      Int_levs=rep(0,length=ncol(BF))
+      Add_levs=rep(0,length=ncol(BF))
       
       for (u in 1:ncol(BF)) {
+        
         BM1 = scale(model.matrix(as.formula(paste("~",paste0(colnames(BF)[1:u],collapse="+"))),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
         Q = qr(BM1)
         BM1 = BM1[, Q$pivot[1:Q$rank] ,drop=FALSE] # removes any aliased block effects 
-
-        if (u>1 & weighting>0) {
-          BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF),center=TRUE,scale = FALSE)[,-1,drop=FALSE]
-          Q=qr(BM2)
-          BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # removes any aliased block effects 
-        } else BM2=NULL
+        BM1 = qr.Q(qr(BM1)) # orthogonal basis for BM1
+        Add_levs[u]=ncol(BM1)
+        
+        
+        BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF),center=TRUE,scale = FALSE)[,-1,drop=FALSE]
+        Q=qr(BM2)
+        BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # removes any aliased block effects 
+        BM2 = qr.Q(qr(BM2)) # orthogonal basis for BM2
+        Int_levs[u]=ncol(BM2)
+        if ((ncol(TM) + ncol(BM2)+1) > nrow(TM)) BM2=NULL
         
         if (!is.null(BM2)) {
             NS = blocksNonSingular(TF,TM,BM2,IBF[,u],BF[,u])
@@ -420,24 +395,24 @@
         
         if (is.null(BM2))
             NS = blocksNonSingular(TF,TM,BM1,IBF[,u],BF[,u])
-        
+
         if (NS$fullrank==FALSE)  stop("Cannot find a non-singular starting block design - perhaps try a simpler design? ")
         TM = NS$TM
         TF = NS$TF 
-  
-        if (!is.null(BM2))BM=BM2 else BM=BM1
         
-        BM = qr.Q(qr(BM)) # orthogonal basis for BM
+        if ( !is.null(BM2) & weighting>0)BM=BM2 else BM=BM1
+        
         Info=crossprod(cbind(TM,BM))
-        # down weights two factor interactions of BM2, if present
-        if (!is.null(BM2) && ncol(BM2)>ncol(BM1))
-          Info[(1+ncol(BM1)+ncol(TM)):(ncol(TM)+ncol(BM2)),(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2))] = 
-          Info[(1+ncol(BM1)+ncol(TM)):(ncol(TM)+ncol(BM2)),(1+ncol(TM)+ncol(BM1)):(ncol(TM)+ncol(BM2)),drop=FALSE]/(weighting^2)
+      
+        # down weights two factor interactions if present
+        if (!is.null(BM2) && ncol(BM2)>ncol(BM1) && weighting>0)
+          Info[(1+ncol(BM1)+ncol(TM)):ncol(Info),(1+ncol(TM)+ncol(BM1)):ncol(Info)] = 
+          Info[(1+ncol(BM1)+ncol(TM)):ncol(Info),(1+ncol(TM)+ncol(BM1)):ncol(Info),drop=FALSE]/(weighting^2)
         globrelD = 0
         relD = 1
         globTM = TM
         globTF = TF
-
+        
         V=chol2inv(chol(Info))
         for (r in 1:searches) {
           dmax=DMax(TF,TM,BM,V,IBF[,u])
@@ -481,8 +456,31 @@
         } #searches
         TM=globTM
         TF=globTF 
+        
+        E1=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM1)),symmetric=TRUE,only.values = TRUE)
+        if (all(E1$values>tol)) { 
+          D_Effic[u]=prod(E1$values)**(1/ncol(TM))
+          A_Effic[u]=ncol(TM)/sum(1/E1$values)
+        }
+        
+        if (!is.null(BM2)) {
+        E2=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM2)),symmetric=TRUE,only.values = TRUE)
+        if (all(E2$values>tol)) { 
+          D_IntEff[u]=prod(E2$values)**(1/ncol(TM))
+          A_IntEff[u]=ncol(TM)/sum(1/E2$values)
+          }
+        } else {
+          D_IntEff[u]=0
+          A_IntEff[u]=0
+        }
       } # list length
-      Effics=blockEfficiencies(TF,BF,TM)
+      
+      Effics1=data.frame(Additive_Model=addfactors,effects=Add_levs,"D-Efficiency"= round(D_Effic,5),"A-Efficiency"= round(A_Effic,5),
+                         stringsAsFactors = FALSE,check.names = FALSE)
+      Effics2=data.frame(Multiplicative_Model=prodfactors,effects=Int_levs,"D-Efficiency"= round(D_IntEff,5),"A-Efficiency"= round(A_IntEff,5),
+                         stringsAsFactors = FALSE,check.names = FALSE)
+      
+      Effics=cbind(Effics1,Effics2)
       list(TF=TF,TM=TM,Effics=Effics)
     } 
    # *******************************************************************************************************************
@@ -566,10 +564,8 @@
   # Fractional factorials for quantitative level factors - allows replacement of swapped rows from candidate set
   # *******************************************************************************************************************
   factorial = function(TF,nunits,treatments_model) {
-
     fullrand = unlist(lapply(1:ceiling(nunits/nrow(TF)),function(j){sample(seq_len(nrow(TF)))}))
     TF = TF[fullrand,,drop=FALSE]
-
     if (is.null(treatments_model) & isTRUE(all.equal(nunits,nrow(TF)))) {
       TM = fullrankModel(TF,paste("~",paste(colnames(TF),collapse="*")))
       return(list(TF = TF, TM = TM, Eff = 1, DF = ncol(TM)))
@@ -675,6 +671,9 @@
   TM=scale(Z$TM, center = TRUE, scale = FALSE)[,-1,drop=FALSE]
   TM = qr.Q(qr(TM)) # orthogonal basis for TM 
 
+  prodfactors=unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="*")}) )
+  addfactors =unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")}) )
+  
   treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = Z$DF ,"D-Efficiency" = Z$Eff), stringsAsFactors = FALSE,check.names = FALSE)
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - please try a simpler block or treatment design")
   
@@ -683,7 +682,7 @@
     all(nrow(T)==ncol(T) & T[!diag(nrow(T))] == 0 & abs( max(diag(T)) - min(diag(T)) ) < tol ) 
   }))
   
- # for nested equi-block designs with a single unstructured treatment factor uses blocks() function
+ # nested equi-block designs with a single unstructured treatment factor use blocks() function
   if (equinested & ncol(TF)==1 & is.factor(TF[,1])) {
     tlevs=levels(TF[,1])
     blevs=c(1,sapply(BF, nlevels))
@@ -693,7 +692,8 @@
     levels(Treatments[,1]) = tlevs
     Design=Z$Design
     levels(Design[,ncol(Design)]) = tlevs
-    blocksModel=Z$blocks_model
+    blocksModel=Z$blocks_model[,-1]
+    blocksModel=data.frame(Model=addfactors,blocksModel)
     weighting=NULL
   } else {
     if (!is.numeric(weighting)) stop("weighting must be a number between 0 and 1")

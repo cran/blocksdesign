@@ -9,7 +9,7 @@
 #' s**i = N. Then, if s is a prime, the number N is a prime power with p = s and q = i.  
 #' 
 #' @param 
-#' N is the number to be tested for primality
+#' N the number to be tested for primality
 #' 
 #' @return
 #' Returns the base prime p and the power q if N is a prime power; otherwise returns p = 0  and q = 0. 
@@ -21,10 +21,14 @@
 #' @export
 #' 
  isPrimePower=function(N) {
-   if (N==1) return(list(base=1,power=1))
-  for (i in 1:floor(log2(N)) ) 
-    if ( (N **(1/i))%%1 == 0) power=i
-  base=N**(1/power)
+   if (N<1) return(list(base=0,power=0))
+  for (newpower in 1:floor(log2(N))) {
+    newbase = N**(1/newpower)
+    if (abs( newbase - round(newbase)) < .Machine$double.eps^0.75 ) {
+      power=newpower
+      base=newbase
+    }
+ } 
   if (isPrime(base)) return(list(base=base,power=power))
   else return(list(base=0,power=0))
 }

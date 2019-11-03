@@ -17,9 +17,12 @@
 #' 
 #' isPrime(731563)
 #' isPrime(7315631)
+#' isPrime(31**2)
 #'  
 #' @export
  isPrime=function(v) {
+  if (abs( v - round(v)) > .Machine$double.eps^.75) return(FALSE) 
+  else v=round(v) # must be integer
   if (v < 4) return(TRUE)
   if ((v %% 2==0) | (v %% 3==0))  return(FALSE)
   if (v<25) return(TRUE)

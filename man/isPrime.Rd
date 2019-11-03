@@ -23,5 +23,6 @@ expressed as 6k-1 or 6k+1 for integer k.
 
 isPrime(731563)
 isPrime(7315631)
+isPrime(31**2)
  
 }

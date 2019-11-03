@@ -136,13 +136,19 @@ treatments=factor(c(rep(1:12,2),rep(13,12)))
 blocks = data.frame(Main = gl(2,18),  Sub = gl(12,3,36))
 design(treatments,blocks,searches = 5)
 
-## 48 treatments in 2 replicate blocks of size 48 for a 24 x 4 array 
-## with 2 main rows and 3 main columns the cols factor must precede 
-## the rows factor otherwise the design will confound one treatment contrast
-## in the replicates.rows x columns interactions due to inherent aliasing 
+## 48 treatments in 2 replicate blocks with 2 nested rows in each replicate and 3 main columns
+##  (Reps/Rows) x Cols
 treatments=factor(1:48)
-blocks = data.frame(Reps = gl(2,48),Cols = gl(3,8,96),Rows = gl(2,24,96))
+blocks = data.frame(Reps = gl(2,48), Rows = gl(4,24,96), Cols = gl(3,8,96))
 design(treatments,blocks,searches=5)
+
+## 48 treatments in 2 replicate blocks with 2 main columns
+## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
+## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
+treatments=factor(1:48)
+blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
+design(treatments,blocks,searches=5)
+design(treatments,blocks,searches=5,weighting=.9)
 
 ## Factorial treatment designs defined by a single factorial treatment model
 

@@ -2,8 +2,8 @@ Package: blocksdesign
 Type: Package
 Title: Nested and Crossed Block Designs for Factorial, Fractional
         Factorial and Unstructured Treatment Sets
-Version: 3.8
-Date: 2019-11-03"
+Version: 3.9
+Date: 2020-03-01"
 Author: R. N. Edmondson.
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
@@ -23,11 +23,11 @@ Description: Constructs D-optimal or near D-optimal nested and crossed
 License: GPL (>= 2)
 Imports: lme4, plyr, PolynomF
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8
 Suggests: knitr, rmarkdown, R.rsp
 VignetteBuilder: knitr,R.rsp
 NeedsCompilation: no
-Packaged: 2019-11-03 11:13:28 UTC; rne
+Packaged: 2020-02-29 22:12:09 UTC; rodney
 Repository: CRAN
-Date/Publication: 2019-11-03 11:50:07 UTC
+Date/Publication: 2020-02-29 22:40:03 UTC

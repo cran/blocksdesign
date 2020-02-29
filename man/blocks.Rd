@@ -4,8 +4,14 @@
 \alias{blocks}
 \title{Block designs for unstructured treatment sets}
 \usage{
-blocks(treatments, replicates, blocks = NULL, searches = NULL,
-  seed = NULL, jumps = 1)
+blocks(
+  treatments,
+  replicates,
+  blocks = NULL,
+  searches = NULL,
+  seed = NULL,
+  jumps = 1
+)
 }
 \arguments{
 \item{treatments}{the required number of treatments partitioned into sets of equally replicated treatments.}
@@ -24,7 +30,7 @@ blocks(treatments, replicates, blocks = NULL, searches = NULL,
 \item{Treatments}{A table showing the replication number of each treatment in the design.}
 \item{Design}{Data frame giving the optimized block and treatment design in plot order.}
 \item{Plan}{Data frame showing a plan view of the treatment design in the bottom level of the design.}
-\item{blocks_model}{The D-efficiencies and the A-efficiencies of the blocks in each nested level of the 
+\item{Blocks_model}{The D-efficiencies and the A-efficiencies of the blocks in each nested level of the 
  design together with A-efficiency upper-bounds, where available.}
 \item{seed}{Numerical seed used for random number generator.}
 \item{searches}{Maximum number of searches used for each level.}
@@ -86,7 +92,7 @@ Outputs:
 blocks(treatments=list(3,2),replicates=list(2,4),blocks=2,searches=10)
 
 # 50 treatments x 4 replicates with 4 main blocks and 5 nested sub-blocks in each main block
-blocks(treatments=50,replicates=4,blocks=list(4,5))
+\donttest{blocks(treatments=50,replicates=4,blocks=list(4,5))}
 
 # as above but with 20 additional single replicate treatments, one single treatment per sub-block
 \donttest{blocks(treatments=list(50,20),replicates=list(4,1),blocks=list(4,5))}

@@ -85,12 +85,12 @@
 #' For more details see \code{vignette(package = "blocksdesign")}  
 #' 
 #' @return
-#' \item{treatments}{The treatments included in the design and the replication of each individual 
+#' \item{Treatments}{The treatments included in the design and the replication of each individual 
 #' treatment taken in de-randomized standard order.}
-#' \item{design}{The design layout showing the randomized allocation of treatments to blocks and plots.}
-#' \item{treatments_model}{The fitted treatment model, the number of model parameters (DF)
+#' \item{Design}{The design layout showing the randomized allocation of treatments to blocks and plots.}
+#' \item{Treatments_model}{The fitted treatment model, the number of model parameters (DF)
 #'   and the D-efficiency of each sequentially fitted treatment model}
-#' \item{blocks_model}{The blocks sub-model design and 
+#' \item{Blocks_model}{The blocks sub-model design and 
 #' the D- and A-efficiency factors of each successively fitted sub-blocks model.}
 #' \item{seed}{Numerical seed for random number generator.}
 #' \item{searches}{Maximum number of searches in each stratum.}
@@ -106,27 +106,27 @@
 #' 
 #' ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 #' # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
-#' treatments = factor(1:12)
 #' blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
-#' design(treatments,blocks)
+#' design(treatments = factor(1:12),blocks)
+#' 
+#'  ## 6 replicates of 5 treatments with 2 super blocks of size 15 and 10 nested blocks of size 3
+#'  blocks=data.frame(Main = gl(2,15,30), Sub = gl(10,3,30))
+#'  design(treatments=factor(1:5),blocks)
 #' 
 #' ## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
 #' ## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
-#' treatments = factor(1:12)
 #' blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48))
-#' design(treatments,blocks)
+#' design(treatments = factor(1:12),blocks)
 #' 
 #' ## 4 x 12 design for 4 replicates of 12 treatments with 3 sub-column blocks nested 
 #' ## as above but showing 3 sub-columns nested within each main column
-#' treatments = factor(1:12)
 #' blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48), subCols = gl(12,1,48))
-#' \donttest{design(treatments,blocks,searches=200)}
+#' \donttest{design(treatments = factor(1:12),blocks,searches=200)}
 #' 
 #' ## 4 x 13 Row-and-column design for 4 replicates of 13 treatments 
 #' ## Youden design Plan 13.5 Cochran and Cox (1957).
-#' treatments = factor(1:13)
 #' blocks = data.frame(Rows = gl(4,13), Cols = gl(13,1,52))
-#' \donttest{design(treatments,blocks,searches = 700)}
+#' \donttest{design(treatments = factor(1:13),blocks,searches = 700)}
 #' 
 #' ## differential replication 
 #' treatments=factor(c(rep(1:12,2),rep(13,12)))
@@ -135,17 +135,15 @@
 #' 
 #' ## 48 treatments in 2 replicate blocks with 2 nested rows in each replicate and 3 main columns
 #' ##  (Reps/Rows) x Cols
-#' treatments=factor(1:48)
 #' blocks = data.frame(Reps = gl(2,48), Rows = gl(4,24,96), Cols = gl(3,8,96))
-#' design(treatments,blocks,searches=5)
+#' design(treatments=factor(1:48),blocks,searches=5)
 #' 
 #' ## 48 treatments in 2 replicate blocks with 2 main columns
 #' ## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
 #' ## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
-#' treatments=factor(1:48)
 #' blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
-#' design(treatments,blocks,searches=5)
-#' design(treatments,blocks,searches=5,weighting=.9)
+#'  \donttest{design(treatments=factor(1:48),blocks,searches=5)}
+#'  \donttest{design(treatments=factor(1:48),blocks,searches=5,weighting=.9)}
 #' 
 #' ## Factorial treatment designs defined by a single factorial treatment model
 #' 
@@ -156,7 +154,7 @@
 #' blocks = data.frame(b1 = gl(2,8),b2 = gl(4,4),b3 = gl(8,2))
 #' model=" ~ F1 + F2 + F3 + F4 + F5"
 #' \donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-#' if ( isTRUE(all.equal(z$blocks_model[3,3],1) ) ) break }
+#' if ( isTRUE(all.equal(z$Blocks_model[3,3],1) ) ) break }
 #'  print(z)}
 #'  
 #' # Second-order model for five qualitative 2-level factors in 4 randomized blocks
@@ -173,7 +171,7 @@
 #' blocks = data.frame(rows = gl(4,4), cols = gl(4,1,16))
 #' model = "~ F1 + F2 + F3 + F4 + F5"
 #' \donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-#' if ( isTRUE(all.equal(z$blocks_model[2,3],1) ) ) break }
+#' if ( isTRUE(all.equal(z$Blocks_model[2,3],1) ) ) break }
 #'  print(z)}
 #' 
 #' # Quadratic regression for three 3-level numeric factor assuming a 10/27 fraction
@@ -202,7 +200,7 @@
 #' blocks=data.frame(main=gl(3,27))
 #' model = " ~ (F1 + F2 + F3 + F4 + F5)^2"
 #' \donttest{ repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-#' if ( isTRUE(all.equal(z$blocks_model[1,3],1) ) ) break}
+#' if ( isTRUE(all.equal(z$Blocks_model[1,3],1) ) ) break}
 #'  print(z) }
 #' 
 #' # 2nd-order model for two qualitative and two quantitative level factors in 2 blocks of size 18
@@ -254,7 +252,7 @@
 #' @importFrom plyr match_df
 #' 
   design = function(treatments,blocks=NULL,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1) {
-    options(contrasts=c('contr.SAS','contr.poly'))
+    options(contrasts=c('contr.treatment','contr.poly'))
     options(stringsAsFactors = TRUE) 
     tol = .Machine$double.eps ^ 0.5
     if (!is.null(seed)) set.seed(seed) 
@@ -372,19 +370,22 @@
       Int_levs=rep(0,length=ncol(BF))
       Add_levs=rep(0,length=ncol(BF))
       
+      orthogM=function(M) {
+        QR = qr(M) # qr transformation
+        if (QR$rank < min(nrow(M),ncol(M)))
+          QR = qr(M[, QR$pivot[1:QR$rank] ,drop=FALSE]) # removes any aliased block effects then finds qr transformation
+        M = qr.Q(QR) # orthogonal basis for M where Q'Q=I
+        M
+      }
+      
       for (u in 1:ncol(BF)) {
-        
         BM1 = scale(model.matrix(as.formula(paste("~",paste0(colnames(BF)[1:u],collapse="+"))),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
-        Q = qr(BM1)
-        BM1 = BM1[, Q$pivot[1:Q$rank] ,drop=FALSE] # removes any aliased block effects 
-        BM1 = qr.Q(qr(BM1)) # orthogonal basis for BM1
+        BM1=orthogM(BM1)
         Add_levs[u]=ncol(BM1)
         
-        
         BM2=scale(model.matrix(as.formula(paste("~",paste0("(",paste0(colnames(BF)[1:u],collapse="+"),")^2"))),BF),center=TRUE,scale = FALSE)[,-1,drop=FALSE]
-        Q=qr(BM2)
-        BM2 = BM2[,Q$pivot[1:Q$rank],drop=FALSE] # removes any aliased block effects 
-        BM2 = qr.Q(qr(BM2)) # orthogonal basis for BM2
+        BM2=orthogM(BM2)
+        
         Int_levs[u]=ncol(BM2)
         if ((ncol(TM) + ncol(BM2)+1) > nrow(TM)) BM2=NULL
         
@@ -415,7 +416,9 @@
         
         V=chol2inv(chol(Info))
         for (r in 1:searches) {
+
           dmax=DMax(TF,TM,BM,V,IBF[,u])
+          
           if (dmax$locrelD>(1+tol)) {
             relD=relD*dmax$locrelD
             TM=dmax$TM
@@ -436,12 +439,10 @@
               rownames(TF)=NULL
               unavailable=suppressMessages(as.integer(rownames(match_df(TF,TF[s1,,drop=FALSE]))))
               z= seq_len(nrow(TF))[IBF[,u]==IBF[s1,u] & BF[,u]!=BF[s1,u] & !(seq_len(nrow(TF))%in%unavailable)]
-              
               if (length(z)==0 & counter<501) next 
               else if (length(z)==0 & counter>500) break
               if (length(z)>1) s=c(s1,sample(z,1)) else s=c(s1,z)
               testDswap=dMat(TM,BM,V,s)[2,1]
- 
               if (testDswap<tol & counter<501) next
               else if (testDswap<tol & counter>500) break
               Dswap=testDswap
@@ -475,11 +476,8 @@
         }
       } # list length
       
-      Effics1=data.frame(Additive_Model=addfactors,effects=Add_levs,"D-Efficiency"= round(D_Effic,5),"A-Efficiency"= round(A_Effic,5),
-                         stringsAsFactors = FALSE,check.names = FALSE)
-      Effics2=data.frame(Multiplicative_Model=prodfactors,effects=Int_levs,"D-Efficiency"= round(D_IntEff,5),"A-Efficiency"= round(A_IntEff,5),
-                         stringsAsFactors = FALSE,check.names = FALSE)
-      
+      Effics1=data.frame(First_order_model=addfactors,effects=Add_levs,"D-Efficiency"= round(D_Effic,5),"A-Efficiency"= round(A_Effic,5))
+      Effics2=data.frame(Second_order_model=prodfactors,effects=Int_levs,"D-Efficiency"= round(D_IntEff,5),"A-Efficiency"= round(A_IntEff,5))
       Effics=cbind(Effics1,Effics2)
       list(TF=TF,TM=TM,Effics=Effics)
     } 
@@ -656,9 +654,9 @@
   nunits=nrow(BF)
   if (is.null(searches)) 
     if (nunits<100) 
-      searches=50 else if (nunits<1000) 
-        searches=5000%/%nunits else if (nunits<5000) 
-          searches=5000%/%nunits else 
+      searches=25 else if (nunits<1000) 
+        searches=2500%/%nunits else if (nunits<5000) 
+          searches=2 else 
             searches=1
   if (!is.finite(searches) | is.nan(searches) | searches<1 | searches%%1!=0 ) stop(" searches parameter is invalid")
 
@@ -674,7 +672,8 @@
   prodfactors=unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="*")}) )
   addfactors =unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")}) )
   
-  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = Z$DF ,"D-Efficiency" = Z$Eff), stringsAsFactors = FALSE,check.names = FALSE)
+  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = Z$DF ,"D-Efficiency" = Z$Eff), 
+                         stringsAsFactors = FALSE,check.names = FALSE)
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - please try a simpler block or treatment design")
   
   equinested =  all(sapply( 1:ncol(BF),function(i) {
@@ -692,7 +691,7 @@
     levels(Treatments[,1]) = tlevs
     Design=Z$Design
     levels(Design[,ncol(Design)]) = tlevs
-    blocksModel=Z$blocks_model[,-1]
+    blocksModel=Z$Blocks_model[,-1]
     blocksModel=data.frame(Model=addfactors,blocksModel)
     weighting=NULL
   } else {
@@ -709,7 +708,7 @@
   }
   rownames(Design)=NULL
   rownames(Treatments)=NULL
-  list(treatments=Treatments,design=Design,treatments_model=treatsModel,blocks_model=blocksModel,
+  list(Treatments=Treatments,Design=Design,Treatments_model=treatsModel,Blocks_model=blocksModel,
        weighting=weighting,seed=seed,searches=searches,jumps=jumps)
   }
   

@@ -1,86 +1,59 @@
 #' @title General block and treatment designs.
 #'
 #' @description
-#' Constructs D-optimal block and treatment designs for any feasible combinations of nested or crossed block 
+#' Constructs D-optimal block and treatment designs for any feasible combination of block 
 #' factors and any feasible linear treatment model.   
 #' 
-#' @param treatments a single treatment factor or data frame containing any combination of qualitative level treatment factors
-#' and numeric level treatment vectors.  
+#' @param treatments a single treatment factor or a data frame containing any combination of 
+#' treatment factors with any combination of treatment vectors.
 #' 
-#' @param blocks a single block factor or data frame containing one or more qualitative level block
+#' @param blocks a single block factor or a data frame containing one or more qualitative level block
 #' factors in the required order of fitting.
 #' 
-#' @param treatments_model a model formula for the required treatments design.
+#' @param treatments_model a treatment model formula for the required treatment design.
 #' 
-#' @param weighting a weighting factor between 0 and 1 for weighting the interaction effects of
-#' crossed blocks factors where the default weighting is 0.5  
+#' @param weighting a weighting factor between 0 and 1 for weighting the 2-factor interaction effects of
+#' factorial blocks.
 #'
-#' @param seed an integer initializing the random number generator. The null default gives an arbitrary 
-#' random initialization.
+#' @param seed an integer initializing the random number generator.
 #'
 #' @param searches the maximum number of local optima searched at each stage of an
-#' optimization. The default depends on the design size.
+#' optimization.
 #'
 #' @param jumps the number of pairwise random treatment swaps used to escape a local maxima. 
-#' The default is a single swap.
 #' 
 #' @details
 #' 
-#' The \code{treatments} object is a factor or a data frame containing one or more qualitative
-#' level treatment factors or quantitative level treatment vectors defining a set of candidate treatments
-#'  from which the optimized treatment design is selected.
+#' \code{treatments} is a factor or a data frame containing one or more qualitative
+#' or quantitative level treatment vectors defining a set of candidate treatments.
+#' If the size of the candidate set is different from the size of the block design, 
+#' or if the \code{treatments_model} is structured, the treatment design is optimized by
+#' selection with replacement, otherwise the full fixed candidate set is used for the treatment design. 
 #' 
-#' The \code{blocks} object is a factor or a data frame containing one or more qualitative level block factors. The default
-#' \code{blocks} object is a single level factor equal in length to the \code{treatments} object. The size of the \code{blocks}
-#'  object defines the required design size. 
-#' 
-#' The \code{treatments_model} can be either a single formula for a single design matrix
-#' or a compound formula for two or more design matrices. A compound formula contains one or more occurrences of a splitting 
-#' operator \code{|} which splits-off a partial design formula on the left hand side of each \code{|}.
-#' Assuming the left hand part of each split is a well defined model design formula and replacing all remaining \code{|} 
-#' by \code{+} in each partial design formula gives a hierarchical set of treatment design matrices for sequential model fitting. 
-#' The advantage of sequential model fitting is that it provides improved flexibility
-#' for fitting factors or variables of different status or importance and allows a wider range of choices
-#' of optimized design for different situations (see examples below).
-#' 
-#' Treatments are selected from the design candidate set with replacement unless the size of the 
-#' candidate set exactly equals the size of the required design and the \code{treatments_model} is null, 
-#' in which case the full candidate set is used for the treatment design. This option allows any arbitrary
-#' treatment set with any arbitrary treatment replication to be input as the required treatment design. 
-#' If the size of the candidate set is different from the size of the required design, 
-#' or if the \code{treatments_model} is non-null, the treatment design is optimized by
-#' selection with replacement.
-#' 
-#' The treatment design criterion is the ratio of the generalized variance of the treatment design based on the
-#' full treatment candidate set relative to the generalized variance of the treatment design based on the
-#' optimized treatment set (D-optimality). 
-#' If the required design is a fractional factorial and the candidate set is a full factorial,
-#' the candidate set will be orthogonal and any design selected from the candidate set will
-#' have a relative efficiency less than or equal to 1. For quantitative level treatments, however, 
-#' a full factorial design may not provide an optimal design and then the relative efficiency of 
-#' the optimized design may exceed 1. The efficiency factor is used to compare different optimizations of
-#' the same design with the best design having the largest efficiency.
+#' \code{blocks} is a factor or a data frame containing one or more qualitative level block factors. The design is optimized
+#' for each block factor added sequentially from left to right with the optimization constrained to be constant for all
+#' previously added block factors. The length of the \code{blocks} object defines the total number of plots in the design. 
 #'  
-#' The \code{design} algorithm fits the blocks design by sequentially adding the block factors
-#' in the column order of the \code{blocks} data frame. Each block factor is optimized  
-#' conditional on all preceding block factors remaining fixed but ignoring all succeeding block factors.
-#' This method allows the blocking factors to be fitted in order of importance with the 
-#' largest and most important blocks fitted first and the smaller and less important blocks fitted subsequently. 
+#' \code{treatments_model} is either a single formula or a compound formula split by the \code{|} operator.
+#' The left hand side of each \code{|}, assuming all remaining \code{|} are replaced by 
+#' \code{+}, is a partial model formula. Partial model formula define partial design matrices which are fitted
+#' and optimized sequentially from left to right. Sequential model fitting provides improved flexibility
+#' for fitting factors or variables of different status or importance (see examples below).
 #' 
-#' For crossed blocks designs, a differential weighting factor w is used to determine the relative importance
-#' of the block main effects versus the block interaction effects. If w = 0 the algorithm fits a simple additive
-#' main effects design whereas if w = 1 the algorithm fits a fully crossed blocks design. For intermediate 0 < w < 1, 
-#' the block factor interaction effects are downweighted relative to the main effects,
+#' The treatment design criterion for each partial model is the generalized variance of the treatment design for that
+#' model (D-optimality) and the design efficiency is the ratio of the generalized variance of the full candidate treatment model
+#' for the required treatment model relative to the generalized variance of the optimized design. The efficiency is necessarily
+#' less than or equal to 1 for purely factorial models but may exceed 1 for polynomial models. 
+#' 
+#' For crossed blocks, a weighting factor w is used to determine the relative importance
+#' of the block main effects versus the block 2-factor interaction effects. If w = 0 the algorithm fits a simple additive
+#' main effects model whereas if w = 1 the algorithm fits both main effects and 2-factor interaction effects.
+#' For intermediate 0 < w < 1, the 2-factor interaction effects are downweighted relative to the main effects where
 #' the smaller the value of w the greater the downweighting. The default weighting is 0.5 and 
 #' provided that all block effects are estimable, this weighting gives a compromise design where all 
-#' factorial block effects are included in the blocks design but where the main block effects are given
-#' greater importance than the block interaction effects.See \code{vignette(package = "blocksdesign")} for more details. 
-#' 
-#' The blocks design criterion is the D-efficiency of the treatment design without block effects versus
-#' the efficiency of the treatment design with block effects. The D-efficiency factor is necessarily less
-#' than or equal to one with the most efficient design giving the largest D-efficiency factor. 
-#'  For unstructured treatment designs, the A-efficiency factor is also shown together with an estimated A-efficiency 
-#' upper-bound, where available. 
+#' main effects and 2-factor interaction effects are included but where the main effects are given
+#' greater realative importance than the 2-factor interaction effects.
+#' See \code{vignette(package = "blocksdesign")} for more details. 
 #' 
 #' For more details see \code{vignette(package = "blocksdesign")}  
 #' 
@@ -107,11 +80,11 @@
 #' ## 4 replicates of 12 treatments with 16 nested blocks of size 3
 #' # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
 #' blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
-#' design(treatments = factor(1:12),blocks)
+#' design(treatments = factor(rep(1:12,4)),blocks)
 #' 
 #'  ## 6 replicates of 5 treatments with 2 super blocks of size 15 and 10 nested blocks of size 3
 #'  blocks=data.frame(Main = gl(2,15,30), Sub = gl(10,3,30))
-#'  design(treatments=factor(1:5),blocks)
+#'  design(treatments=gl(5,1,30),blocks)
 #' 
 #' ## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
 #' ## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
@@ -142,8 +115,8 @@
 #' ## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
 #' ## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
 #' blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
-#'  \donttest{design(treatments=factor(1:48),blocks,searches=5)}
-#'  \donttest{design(treatments=factor(1:48),blocks,searches=5,weighting=.9)}
+#' design(treatments=factor(1:48),blocks,searches=5)
+#' design(treatments=factor(1:48),blocks,searches=5,weighting=.9)
 #' 
 #' ## Factorial treatment designs defined by a single factorial treatment model
 #' 
@@ -252,9 +225,8 @@
 #' @importFrom plyr match_df
 #' 
   design = function(treatments,blocks=NULL,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1) {
-    options(contrasts=c('contr.treatment','contr.poly'))
-    options(stringsAsFactors = TRUE) 
     tol = .Machine$double.eps ^ 0.5
+    options(contrasts=c('contr.SAS','contr.poly'))
     if (!is.null(seed)) set.seed(seed) 
     
     # *********************************************************************************************************************
@@ -360,7 +332,7 @@
     # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
     # Each factor in BF may include levels from preceding factors hence qr pivoting is essential to sweep out factor dependencies  
     # ************************************************************************************************************************
-     blocksOpt=function(TF,TM,BF,searches) {
+    blocksOpt=function(TF,TM,BF,searches) {
       IBF=data.frame(factor(rep(1,nrow(TF))),lapply(1:ncol(BF), function(i) droplevels(interaction(BF[,c(1:i)]))))
       colnames(IBF)=c("mean",unlist(lapply(1:ncol(BF),function(j){paste0(colnames(BF)[1:j],collapse=".")})))
       D_Effic=rep(0,length=ncol(BF))
@@ -390,13 +362,13 @@
         if ((ncol(TM) + ncol(BM2)+1) > nrow(TM)) BM2=NULL
         
         if (!is.null(BM2)) {
-            NS = blocksNonSingular(TF,TM,BM2,IBF[,u],BF[,u])
-            if (NS$fullrank==FALSE) BM2=NULL
+          NS = blocksNonSingular(TF,TM,BM2,IBF[,u],BF[,u])
+          if (NS$fullrank==FALSE) BM2=NULL
         }
         
         if (is.null(BM2))
-            NS = blocksNonSingular(TF,TM,BM1,IBF[,u],BF[,u])
-
+          NS = blocksNonSingular(TF,TM,BM1,IBF[,u],BF[,u])
+        
         if (NS$fullrank==FALSE)  stop("Cannot find a non-singular starting block design - perhaps try a simpler design? ")
         TM = NS$TM
         TF = NS$TF 
@@ -404,7 +376,7 @@
         if ( !is.null(BM2) & weighting>0)BM=BM2 else BM=BM1
         
         Info=crossprod(cbind(TM,BM))
-      
+        
         # down weights two factor interactions if present
         if (!is.null(BM2) && ncol(BM2)>ncol(BM1) && weighting>0)
           Info[(1+ncol(BM1)+ncol(TM)):ncol(Info),(1+ncol(TM)+ncol(BM1)):ncol(Info)] = 
@@ -416,7 +388,7 @@
         
         V=chol2inv(chol(Info))
         for (r in 1:searches) {
-
+          
           dmax=DMax(TF,TM,BM,V,IBF[,u])
           
           if (dmax$locrelD>(1+tol)) {
@@ -465,10 +437,10 @@
         }
         
         if (!is.null(BM2)) {
-        E2=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM2)),symmetric=TRUE,only.values = TRUE)
-        if (all(E2$values>tol)) { 
-          D_IntEff[u]=prod(E2$values)**(1/ncol(TM))
-          A_IntEff[u]=ncol(TM)/sum(1/E2$values)
+          E2=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM2)),symmetric=TRUE,only.values = TRUE)
+          if (all(E2$values>tol)) { 
+            D_IntEff[u]=prod(E2$values)**(1/ncol(TM))
+            A_IntEff[u]=ncol(TM)/sum(1/E2$values)
           }
         } else {
           D_IntEff[u]=0
@@ -481,6 +453,7 @@
       Effics=cbind(Effics1,Effics2)
       list(TF=TF,TM=TM,Effics=Effics)
     } 
+     
    # *******************************************************************************************************************
    # Updates variance matrix for pairs of swapped treatments using standard matrix updating formula
    # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB
@@ -668,20 +641,16 @@
   TF=data.frame(Z$TF)
   TM=scale(Z$TM, center = TRUE, scale = FALSE)[,-1,drop=FALSE]
   TM = qr.Q(qr(TM)) # orthogonal basis for TM 
-
   prodfactors=unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="*")}) )
   addfactors =unlist(lapply(1:ncol(BF),function(j){ paste0(colnames(BF)[1:j],collapse="+")}) )
-  
-  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = Z$DF ,"D-Efficiency" = Z$Eff), 
-                         stringsAsFactors = FALSE,check.names = FALSE)
+  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = Z$DF ,"D-Efficiency" = Z$Eff))
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - please try a simpler block or treatment design")
-  
   equinested =  all(sapply( 1:ncol(BF),function(i) {
     T  = table( interaction( BF[,c(1:i)],drop=TRUE) , BF[,i]  )
     all(nrow(T)==ncol(T) & T[!diag(nrow(T))] == 0 & abs( max(diag(T)) - min(diag(T)) ) < tol ) 
   }))
   
- # nested equi-block designs with a single unstructured treatment factor use blocks() function
+ # nested equi-block designs with a single unstructured treatment factor uses blocks() function
   if (equinested & ncol(TF)==1 & is.factor(TF[,1])) {
     tlevs=levels(TF[,1])
     blevs=c(1,sapply(BF, nlevels))

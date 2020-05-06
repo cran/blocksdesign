@@ -2,18 +2,24 @@
 #'
 #' @description
 #'
-#' Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
+#' Constructs randomized nested blocks for unstructured treatment sets down to any feasible depth of nesting.
 #'
 #' @details
 #'
-#' Constructs randomized nested block designs with arbitrary depth of nesting for arbitrary unstructured treatment sets.
+#' Constructs randomized nested block designs with arbitrary depth of nesting for any arbitrary number of unstructured
+#' treatment sets.
 #' 
-#' The \code{treatments} parameter is a set of numbers that gives a partition of the total number of treatments
-#'  while the \code{replicates} parameter is a matching set of numbers that defines the 
-#' replication of each treatment set in the partition.
+#' \code{treatments} is a set of numbers partitioning the total number of treatments into
+#' sets of equi-replicate treatments
 #' 
-#' The \code{blocks} parameter, if any, defines the number of blocks for each level of nesting from the highest
-#' to the lowest. The first number, if any, is the number of nested row blocks in the first-level of nesting, 
+#' \code{replicates} is a matching set of treatment replication numbers, one for each treatment 
+#' set in the partition.
+#' 
+#' \code{blocks} is a set of levels where each number is the number of
+#' levels nested within each level of the preceding factor. The top single level super-block
+#' need not be defined.  
+#'  
+#'  The first number, if any, is the number of nested row blocks in the first-level of nesting, 
 #' the second number, if any, is the number of nested row blocks in
 #' the second-level of nesting and so on down to any required feasible depth of nesting.
 #'
@@ -50,11 +56,11 @@
 #'
 #' @param blocks the number of nested blocks for each level of nesting from the top down.
 #' 
-#' @param seed an integer initializing the random number generator. The default is a random seed.
+#' @param seed an integer initializing the random number generator.
 #'
 #' @param searches the maximum number of local optima searched for a design optimization. 
 #'
-#' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.
+#' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima.
 #'
 #' @return
 #' \item{Treatments}{A table showing the replication number of each treatment in the design.}
@@ -84,7 +90,7 @@
 #' blocks(treatments=list(3,2),replicates=list(2,4),blocks=2,searches=10)
 #'
 #' # 50 treatments x 4 replicates with 4 main blocks and 5 nested sub-blocks in each main block
-#' \donttest{blocks(treatments=50,replicates=4,blocks=list(4,5))}
+#' blocks(treatments=50,replicates=4,blocks=list(4,5))
 #'
 #' # as above but with 20 additional single replicate treatments, one single treatment per sub-block
 #' \donttest{blocks(treatments=list(50,20),replicates=list(4,1),blocks=list(4,5))}
@@ -105,36 +111,11 @@
 #' @importFrom stats coef anova lm model.matrix as.formula setNames 
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
-   options(contrasts=c('contr.treatment','contr.poly'))
-   options(stringsAsFactors = TRUE) 
+   options(contrasts=c('contr.SAS','contr.poly'))
    tol = .Machine$double.eps ^ 0.5
    if (is.list(treatments)) treatments=unlist(treatments)
    if (is.list(blocks)) blocks=unlist(blocks)
    if (is.list(replicates)) replicates=unlist(replicates)
-   
-  # ***********************************************************************************************
-  # Block design efficiency factors
-  # *********************************************************************************************** 
-   blockEstEffics=function(TF,BF) {
-     if (nlevels(BF)==1) return(c(1,1))
-     if (is.data.frame(TF))TF=TF[,1]
-     if (is.data.frame(BF)) BF=BF[,1]
-     TM  = scale(model.matrix(~ TF))[,-1]
-     BMO = scale(model.matrix(~ BF))[,-1]
-     TMO = qr.Q(qr(TM)) # orthogonal basis for TM 
-     BMO = qr.Q(qr(BMO)) # orthogonal basis for BM
-     if (nlevels(TF)<=nlevels(BF)) 
-       E=eigen(diag(ncol(TMO))-tcrossprod(crossprod(TMO,BMO)),symmetric=TRUE,only.values = TRUE)
-      else E=eigen(diag(ncol(BMO))-tcrossprod(crossprod(BMO,TMO)),symmetric=TRUE,only.values = TRUE)
-     
-     Deff=prod(E$values)**(1/ncol(TMO))
-     
-     if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TMO)/sum(1/E$values)
-      else Aeff=ncol(TMO)/(ncol(TMO)-ncol(BMO) + sum(1/E$values) )
-
-     return(list(Deffic= round(Deff,5), Aeffic=round(Aeff,5)))
-   }
-   
  # ***********************************************************************************************
  # Tests for and constructs squarelattice designs
  #  Allocates v*v treatments to blocks assuming a lattice design with r complete replicate blocks
@@ -267,6 +248,7 @@
     VTB = VTB - tcrossprod(Z1,Z2) + tcrossprod(W1,W2) 
     list(VTT=VTT,VBB=VBB,VTB=VTB)
   }  
+
   # *******************************************************************************************************************
   #  Searches for an optimization with selected number of searches and selected number of junps to escape local optima
   # nested blocks only
@@ -365,39 +347,65 @@
     stop(" Unable to find an initial non-singular choice of treatment design for this choice of block design")
   }
   # *****************************************************************************************************************
-  # Optimize the nested Blocks assuming a possible set of Main block constraints Initial randomized starting design.
+  # Optimizes the nested Blocks assuming a possible set of Main block constraints and assuming a randomized starting design.
   # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
+  # The model matrix for the full set of treatment or block effects is represented here by SAS contrast which assume an overall 
+  # mean equal to the last treatment or block level which is omittted to give a full rank model. 
+  # The variance matrices are calculated by taking contrasts WITHIN each term to give the contrast of each term from the last term.
+  # The first term of each model is a zero vector which is moved to the last term to represent the deviations of the last term from itself. 
+  # The covarinaces of the non null terms and the variances and covariances of the last term are invariant and are equated to zero. 
+  # The model.matrix function MUST define SAS type contrasts and the options setting for this function are SAS contrasts.
+  # For nested blocks, the full set of nested block contrasts including the final column of zeroes
+  # must be nested within each main block which is achieved using the reorder function shown below 
   # *****************************************************************************************************************
   blocksOpt=function(TF,MF,BF) {
       TM=model.matrix(as.formula("~treatments"),TF)[,-1,drop=FALSE] # drops mean contrast
       TM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(TM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
       if (nlevels(MF)==1) BM=model.matrix(as.formula(~BF))[,-1,drop=FALSE] else
-        BM=model.matrix(as.formula(~MF+MF:BF))[,-c(1:nlevels(MF)),drop=FALSE]
-      #centres sub-blocks within main blocks
+        BM=model.matrix(as.formula(~BF:MF))[,-1,drop=FALSE]
       BM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
-      # reorder within main blocks
-      BM=BM[ ,as.numeric(matrix(1:(nlevels(BF)*nlevels(MF)),nrow=nlevels(BF),ncol=nlevels(MF),byrow=TRUE)[-nlevels(BF),]),drop=FALSE]
+      BM=BM[,-c((1:nlevels(MF))*nlevels(BF)) ,drop=FALSE]
       if ((ncol(cbind(TM,BM))+1) > nrow(TM)) stop( paste("Too many parameters: plots =",nrow(TM)," parameters = ",ncol(cbind(TM,BM)))) 
       nonsing=NonSingular(TF,BF,TM,BM,MF)
       TF=nonsing$TF
       TM=nonsing$TM
       V=chol2inv(chol(crossprod(cbind(TM,BM))))
-      VTT = V[1:ncol(TM),1:ncol(TM),drop=FALSE]
-      VBB = V[ (ncol(TM)+1):ncol(V) , (ncol(TM)+1):ncol(V),drop=FALSE]
-      VTB = V[1:ncol(TM), (ncol(TM)+1):ncol(V), drop=FALSE]
-      VTT=rbind ( cbind( VTT, rep(0,ncol(TM) )) , rep(0,(1+ncol(TM)) ))
-      VBB=rbind(  cbind( VBB, matrix(0, nrow=ncol(BM),ncol=nlevels(MF)) ),matrix(0, nrow=nlevels(MF),ncol=(ncol(BM)+nlevels(MF))))
-      VTB=rbind(  cbind( VTB, matrix(0, nrow=ncol(TM),ncol=nlevels(MF)) ),rep(0,(ncol(BM)+nlevels(MF)  )))
-      reorder=c(rbind( matrix(seq_len(ncol(BM)), nrow=(nlevels(BF)-1), ncol=nlevels(MF)), seq(ncol(BM)+1, nlevels(BF)*nlevels(MF))))
+      VTT = matrix(0, nrow=(1+ncol(TM)), ncol=(1+ncol(TM)) )
+      VTT[1:ncol(TM),1:ncol(TM)] = V[1:ncol(TM),1:ncol(TM),drop=FALSE]
+      VBB = matrix(0, nrow=ncol(BM)+nlevels(MF),ncol=ncol(BM)+nlevels(MF))
+      VBB[1:ncol(BM),1:ncol(BM)] = V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE]
+      VTB = matrix(0, nrow=(1+ncol(TM)), ncol=ncol(BM)+nlevels(MF) )
+      VTB[1:ncol(TM),1:ncol(BM)] = V[1:ncol(TM), (ncol(TM)+1):ncol(V), drop=FALSE]
+      reorder=c(rbind( matrix(1:((nlevels(BF)-1)*nlevels(MF)),nrow=(nlevels(BF)-1),ncol=nlevels(MF)),(nlevels(BF)-1)*nlevels(MF)+seq(1,nlevels(MF)))) 
       VBB=VBB[reorder,reorder] 
       VTB=VTB[,reorder] 
       TF=Optimise(TF,MF,BF,VTT,VBB,VTB,TM,BM)
     return(TF)
   }
+  # ***********************************************************************************************
+  # Block design efficiency factors
+  # *********************************************************************************************** 
+  blockEstEffics=function(TF,BF) {
+    if (nlevels(BF)==1) return(c(1,1))
+    if (is.data.frame(TF))TF=TF[,1]
+    if (is.data.frame(BF)) BF=BF[,1]
+    TM  = scale(model.matrix(~ TF))[,-1]
+    BMO = scale(model.matrix(~ BF))[,-1]
+    TMO = qr.Q(qr(TM)) # orthogonal basis for TM 
+    BMO = qr.Q(qr(BMO)) # orthogonal basis for BM
+    if (nlevels(TF)<=nlevels(BF)) 
+      E=eigen(diag(ncol(TMO))-tcrossprod(crossprod(TMO,BMO)),symmetric=TRUE,only.values = TRUE)
+    else E=eigen(diag(ncol(BMO))-tcrossprod(crossprod(BMO,TMO)),symmetric=TRUE,only.values = TRUE)
+    Deff=prod(E$values)**(1/ncol(TMO))
+    if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TMO)/sum(1/E$values)
+    else Aeff=ncol(TMO)/(ncol(TMO)-ncol(BMO) + sum(1/E$values) )
+    return(list(Deffic= round(Deff,5), Aeffic=round(Aeff,5)))
+  }
   # *******************************************************************************************************************************
   # Finds efficiency factors for block designs
   # *******************************************************************************************************************************
-  BlockEfficiencies=function(Design) {
+  BlockEfficiencies=function(blkDesign,TF) {
+    Design=data.frame(lapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i])}),plots=factor(1:nunits),TF)
     effics=matrix(NA,nrow=(ncol(Design)-2),ncol=2)
     for (i in seq_len(ncol(Design)-2)) 
       effics[i,]=unlist(blockEstEffics(Design[,ncol(Design)],Design[,i]))
@@ -424,17 +432,21 @@
     }))
   blocksizes
   }
+  # *******************************************************************************************************************************
+  #  Expands set of 'blocks' factor levels in left to right 'natural' order with first set changing slowest and last changing fastest
+  # *******************************************************************************************************************************
+  blocksGrid=function(blocks){expand.grid(lapply(length(blocks):1,function(i) {factor(seq(blocks[i]),                                                             
+                              labels=lapply(1:blocks[i], function(j){paste0("Blocks_",j)}))}))[length(blocks):1]}
+  
   # *************************************************************************************************************************
   # Main design program which tests input variables, omits any single replicate treatments, optimizes design, replaces single
   # treatments, randomizes design and prints design outputs including design plans, incidence matrices and efficiency factors
   # *************************************************************************************************************************
-  options(contrasts=c('contr.SAS','contr.poly'))
-  tol=.Machine$double.eps^0.5
   if (missing(treatments)|is.null(treatments)) stop(" Treatments missing or not defined ")
   if (missing(replicates)|is.null(replicates)) stop(" Replicates missing or not defined ")
   if (!is.null(seed)) set.seed(seed)
-  if (is.na(jumps) | !is.finite(jumps) | is.nan(jumps) | jumps<1 | jumps%%1!=0 | jumps>10) 
-    stop(" maximum number of jumps is 10 ")
+  if (is.na(jumps) | !is.finite(jumps) | is.nan(jumps) | jumps<1 | jumps%%1!=0 | jumps>25) 
+    stop(" maximum number of jumps is 25 ")
   if (any(replicates%%1!=0)|any(replicates<1)) stop(" replication numbers must be integers")
   if (anyNA(treatments)|any(is.nan(treatments))|any(!is.finite(treatments))|any(treatments<1)) 
     stop(" treatments parameter invalid")
@@ -444,6 +456,8 @@
   if (is.null(blocks)) blocks=hcf
   if (anyNA(blocks)|any(is.nan(blocks))|any(!is.finite(blocks))|any(blocks%%1!=0)|any(blocks<1)|is.null(blocks)) 
     stop(" blocks invalid")
+  blocks=blocks [!blocks %in% 1]
+  if (length(blocks)==0) blocks=1
   ntrts=sum(treatments)
   TF=data.frame(unlist(lapply(1:hcf,function(i){sample(rep(factor(1:ntrts), rep(replicates/hcf,treatments)))})))
   colnames(TF)="treatments"
@@ -456,15 +470,13 @@
     names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j-1)}))
   
   if (prod(blocks)*2>nunits) stop("Too many blocks for the available plots  - each block must contain at least two plots")
+  
+  blkdesign=blocksGrid(blocks)
+  colnames(blkdesign)=labels(blocks)
+  blkdesign=cbind("Null"=factor(rep("Blocks_1",nrow(blkdesign))),  blkdesign)
   blocksizes=BlockSizes(blocks,nunits)
-  
-  grid=expand.grid(lapply(length(blocks):1,function(i) {factor(seq(blocks[i]),                                                             
-                                        labels=lapply(1:blocks[i], function(j){paste0("Blocks_",j)}))}))
-  grid=grid[,length(blocks):1,drop=FALSE]
-  colnames(grid)=labels(blocks)
-  blkdesign=cbind("block0"=rep("Blocks_1",prod(blocks)),grid )
-  
   blkDesign=blkdesign[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
+  
   regBlocks=isTRUE(all.equal(max(blocksizes), min(blocksizes)))
   regReps  =isTRUE(all.equal(max(replicates), min(replicates)))
   k=nunits/prod(blocks)  # average block size
@@ -482,20 +494,18 @@
   else if ( hcf%%prod(blocks)!=0 ) 
     for (i in 1:length(blocks)) 
            TF=blocksOpt(TF,interaction(blkDesign[1:i]),blkDesign[,i+1]) 
-
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - try a simpler block or treatment design")
-    NestDesign=data.frame(sapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i])}),plots=factor(1:nunits),TF)
-    Efficiencies=BlockEfficiencies(NestDesign) 
-    
-    Design=data.frame(blkDesign,plots=factor(1:nunits),treatments=TF)[,-1,drop=FALSE]
-    V = split(Design[,ncol(Design)],NestDesign[,(ncol(NestDesign)-2)])
-    V = lapply(V, function(x){ length(x) =max(blocksizes); x })
-    Plan = data.frame(blkdesign[,-1 ,drop=FALSE],rep("",length(V)),matrix(unlist(V),nrow=length(V),byrow=TRUE))
-    colnames(Plan)=c(colnames(blkdesign[,-1 ,drop=FALSE]),"Blocks.Plots:", c(1:max(blocksizes)))
-    
-    row.names(Plan)=NULL
-    row.names(Design)=NULL
-    row.names(Efficiencies)=NULL
-    Treatments=count(Design[,ncol(Design),drop=FALSE])
+  Efficiencies=BlockEfficiencies(blkDesign,TF) 
+  Design=data.frame(blkDesign,plots=factor(1:nunits),treatments=TF)[,-1,drop=FALSE]
+  V = split( Design[,ncol(Design)], interaction(Design[,1:(ncol(Design)-2)],lex.order = TRUE)) 
+  V = lapply(V, function(x){ length(x) =max(blocksizes); x })
+  Plan = data.frame(blkdesign[,-1 ,drop=FALSE],rep("",length(V)),matrix(unlist(V),nrow=length(V),byrow=TRUE))
+  
+  colnames(Plan)=c(colnames(blkdesign[,-1 ,drop=FALSE]),"Blocks.Plots:", c(1:max(blocksizes)))
+  row.names(Plan)=NULL
+  row.names(Design)=NULL
+  row.names(Efficiencies)=NULL
+  Treatments=count(Design[,ncol(Design),drop=FALSE])
+
   list(Treatments=Treatments,Blocks_model=Efficiencies,Design=Design,Plan=Plan,seed=seed,searches=searches,jumps=jumps)
 }

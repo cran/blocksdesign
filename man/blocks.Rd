@@ -22,9 +22,9 @@ blocks(
 
 \item{searches}{the maximum number of local optima searched for a design optimization.}
 
-\item{seed}{an integer initializing the random number generator. The default is a random seed.}
+\item{seed}{an integer initializing the random number generator.}
 
-\item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima. The default is a single swap.}
+\item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima.}
 }
 \value{
 \item{Treatments}{A table showing the replication number of each treatment in the design.}
@@ -37,17 +37,23 @@ blocks(
 \item{jumps}{Number of random treatment swaps used to escape a local maxima.}
 }
 \description{
-Constructs randomized nested block designs for unstructured treatment sets with any feasible depth of nesting.
+Constructs randomized nested blocks for unstructured treatment sets down to any feasible depth of nesting.
 }
 \details{
-Constructs randomized nested block designs with arbitrary depth of nesting for arbitrary unstructured treatment sets.
+Constructs randomized nested block designs with arbitrary depth of nesting for any arbitrary number of unstructured
+treatment sets.
 
-The \code{treatments} parameter is a set of numbers that gives a partition of the total number of treatments
- while the \code{replicates} parameter is a matching set of numbers that defines the 
-replication of each treatment set in the partition.
+\code{treatments} is a set of numbers partitioning the total number of treatments into
+sets of equi-replicate treatments
 
-The \code{blocks} parameter, if any, defines the number of blocks for each level of nesting from the highest
-to the lowest. The first number, if any, is the number of nested row blocks in the first-level of nesting, 
+\code{replicates} is a matching set of treatment replication numbers, one for each treatment 
+set in the partition.
+
+\code{blocks} is a set of levels where each number is the number of
+levels nested within each level of the preceding factor. The top single level super-block
+need not be defined.  
+ 
+ The first number, if any, is the number of nested row blocks in the first-level of nesting, 
 the second number, if any, is the number of nested row blocks in
 the second-level of nesting and so on down to any required feasible depth of nesting.
 
@@ -92,7 +98,7 @@ Outputs:
 blocks(treatments=list(3,2),replicates=list(2,4),blocks=2,searches=10)
 
 # 50 treatments x 4 replicates with 4 main blocks and 5 nested sub-blocks in each main block
-\donttest{blocks(treatments=50,replicates=4,blocks=list(4,5))}
+blocks(treatments=50,replicates=4,blocks=list(4,5))
 
 # as above but with 20 additional single replicate treatments, one single treatment per sub-block
 \donttest{blocks(treatments=list(50,20),replicates=list(4,1),blocks=list(4,5))}

@@ -34,8 +34,8 @@
 #' Hansen, T. & Mullen, G. L. (1992) Primitive polynomials over finite fields,
 #' Mathematics of Computation, 59, 639-643 and Supplement. 
 #' 
-#' Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experimnents,
-#' Dover Publications, Inc.
+#' Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experiments,
+#' Dover Publications, Inc. Section 1.3
 #'  
 #' @param p is any odd prime greater than one  
 #' 
@@ -49,15 +49,16 @@
 #'  
 #' @examples
 #' 
-#' MOLS(2,3,7)
-#' MOLS(3,2,4)
-#' \donttest{MOLS(3,3,4)}
-#' \donttest{MOLS(23,2,2)}
+#' MOLS(2,3) # Single Latin square of size 8 x 8
+#' MOLS(2,3,7) # Seven MOLS of size 8 x 8
+#' MOLS(3,2,4) # Four MOLS of size 9 x 9
+#' \donttest{MOLS(3,3,4)} # Four MOLS of size 27 x 27
+#' \donttest{MOLS(23,2,2)} # Two MOLS of size 529 x 529
 #'  
 #' @export
-  MOLS=function(p,q,r) {
+  MOLS=function(p,q,r=1) {
   if (!isPrime(p))  stop("The parameter p must be a prime number ")
-  if ( r>(p**q-1) ) stop(paste("Not a valid number of replicates" ))
+  if ( r>(p**q-1) ) stop(paste("Number of replicates exceeds the maximum available number of orthogonal squares" ))
   if (q==1 ) {
   mols=sapply(0:r,function(z){ sapply(0:(p-1), function(j){ (rep(0:(p-1))*z +j)%%p}) })
   mols=data.frame(rep(1:p,p),mols+1)
@@ -67,8 +68,13 @@
   }
   
   if (p > 97) stop("Not a valid prime - if q > 1 then p must be a prime less than 100")
+    
+  ##  available prime powers
   primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) 
   powers=c(12,7,5,4,3,3,3,3,rep(2,17))
+  
+  ## primitive polynomials for the MOLS from the Table of Primitive Polynomials given in the Supplement to Hansen and Mullen (1992).
+  ## Requires a jstor account for free access at:  https://www.jstor.org/stable/2153093?seq=1
   pp2=list(
   c(1,1,1),
   c(1,0,1,1),
@@ -144,6 +150,8 @@ checkff = function(p,q,X) {
   if (any(duplicated(data.frame(M))==TRUE)) stop(paste("Could not find a set of primitive elenents for p = ",p," and q = ",q))
 }
 
+## functions ued to calculate Galois Fields (gf)
+
 reduce = function(X,primpol,p,q) {
   c=coef(X)
   if(length(c)>q) 
@@ -152,7 +160,7 @@ reduce = function(X,primpol,p,q) {
   X
 }
 
-ff = function(p,q,index) {
+gf = function(p,q,index) {
   primpol=primpol[[index]][[q-1]]
   primpol=PolynomF::polynomial(  (-primpol[1:q])%%p  )
   X = vector(mode = "list", length = p**q)
@@ -178,10 +186,11 @@ modcoef=function(z) {
   M
 }
 
+## orthogonal Latin squares by method of Raghavarao
 ls=function(p,q,r,index) {
   v=p**q
   shift=c(1:v , (1+2*v):(v*v) , (1+v):(2*v) )
-  gf=ff(p,q,index)
+  gf=gf(p,q,index)
   M=modcoef(gf)
   LS=rep(0,v*v)
   for (i in 1:ncol(M))
@@ -196,18 +205,19 @@ ls=function(p,q,r,index) {
   D
 }
 
-lscheck=function(D,p,q) {
-  for (i in 1:(ncol(D)-1))
-    for (j in (i+1):ncol(D)) {
-           if( all(table(D[,c(i,j)])!=1)) stop(paste("Latin squares for p = ",p," and q= ",q," are non-orthogonal for i = ",i," and j = ",j))
-      else print(paste ("OK", p , q))
-    }
+lscheck=function(D,p,q,r) {
+  for (i in 1:(r+1)) 
+    for (j in (i+1):(r+2)) 
+      if (max(table(D[,c(i,j)]))!=1 | min(table(D[,c(i,j)]))!=1) stop(paste("Latin squares for p = ",p," and q= ",q," and r= ",r," are non-orthogonal 
+      for i = ",i," and j = ",j," please notify maintainer: rodney.edmondson@gmail.com"))
 }
-    D=ls(p,q,r,index)
-    colnames(D)=paste("T", 1:ncol(D), sep = "")
-    Row=rep(1:p**q,each=p**q)
-    Col=rep(1:p**q,p**q)
-    D=data.frame(cbind(Row,Col,D))
-    #if (r>1) lscheck(D[,3:ncol(D)],p,q)
+
+D=ls(p,q,r,index)
+colnames(D)=paste("T", 1:ncol(D), sep = "")
+Row=rep(1:p**q,each=p**q)
+Col=rep(1:p**q,p**q)
+D=data.frame(cbind(Row,Col,D))
+lscheck(D,p,q,r)
+
 return(D)
 }

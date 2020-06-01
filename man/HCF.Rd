@@ -25,3 +25,6 @@ HCF(56,77,616)
 HCF(3,56,77,616) 
 
 }
+\references{
+Euclidean algorithm, see:\url{https://mathworld.wolfram.com/EuclideanAlgorithm.html}
+}

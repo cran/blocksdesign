@@ -4,7 +4,7 @@
 \alias{MOLS}
 \title{Prime power MOLS from finite fields}
 \usage{
-MOLS(p, q, r)
+MOLS(p, q, r = 1)
 }
 \arguments{
 \item{p}{is any odd prime greater than one}
@@ -47,16 +47,17 @@ with a separate column for the allocation of treatments to each individual squar
 }
 \examples{
 
-MOLS(2,3,7)
-MOLS(3,2,4)
-\donttest{MOLS(3,3,4)}
-\donttest{MOLS(23,2,2)}
+MOLS(2,3) # Single Latin square of size 8 x 8
+MOLS(2,3,7) # Seven MOLS of size 8 x 8
+MOLS(3,2,4) # Four MOLS of size 9 x 9
+\donttest{MOLS(3,3,4)} # Four MOLS of size 27 x 27
+\donttest{MOLS(23,2,2)} # Two MOLS of size 529 x 529
  
 }
 \references{
 Hansen, T. & Mullen, G. L. (1992) Primitive polynomials over finite fields,
 Mathematics of Computation, 59, 639-643 and Supplement. 
 
-Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experimnents,
-Dover Publications, Inc.
+Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experiments,
+Dover Publications, Inc. Section 1.3
 }

@@ -2,43 +2,37 @@
 #'
 #' @description
 #'
-#' Constructs randomized nested blocks for unstructured treatment sets down to any feasible depth of nesting.
+#' Constructs randomized nested block designs for unstructured treatment sets.
 #'
 #' @details
 #'
-#' Constructs randomized nested block designs with arbitrary depth of nesting for any arbitrary number of unstructured
-#' treatment sets.
+#' Constructs randomized nested block designs for any arbitrary
+#' number of unstructured treatments and any arbitrary feasible depth of nesting.
 #' 
-#' \code{treatments} is a set of numbers partitioning the total number of treatments into
-#' sets of equi-replicate treatments
+#' \code{treatments} is a set of numbers that partitions the total number of treatments into
+#' equi-replicate treatment sets.
 #' 
-#' \code{replicates} is a matching set of treatment replication numbers, one for each treatment 
-#' set in the partition.
+#' \code{replicates} is a set of treatment replication numbers that defines the replication number of each equi-replicate
+#' \code{treatments} set.
 #' 
-#' \code{blocks} is a set of levels where each number is the number of
-#' levels nested within each level of the preceding factor. The top single level super-block
-#' need not be defined.  
-#'  
-#'  The first number, if any, is the number of nested row blocks in the first-level of nesting, 
-#' the second number, if any, is the number of nested row blocks in
-#' the second-level of nesting and so on down to any required feasible depth of nesting.
-#'
-#' Block sizes are as nearly equal as possible and will never differ by more than a single plot in any 
-#' particular block classification. 
+#' \code{blocks} is a sequence of nested block levels in descending order of block sizes from largest to smallest
+#' where each block level is the number of blocks nested within each preceding block
+#' (assuming a single top-level super-block). The block sizes will automatically be as nearly equal as
+#'  possible and will never differ in size by more than a single plot for any particular level of nesting. 
 #'
 #' Unreplicated treatments are allowed and any simple nested block design can be augmented by any number 
-#' of single unreplicated treatments to give augmented blocks that never differ in size by more than a single plot.
-#' However, it may sometimes be preferable to find an efficient 
-#' block design for the replicated treatments and then add the unreplicated treatments to the design heuristically. 
+#' of unreplicated treatments using the \code{treatments} and \code{replicates} formulae. 
+#' However, it will usually be preferable to find an efficient block design
+#' for just the replicated treatment sets and then to add the unreplicated treatments individually by hand. 
 #'
-#' Square lattice designs are resolvable incomplete block designs for r replicates of p*p treatments 
-#' arranged in blocks of size p where r < p+2 for prime or prime power p or r < 4 for general p. 
-#' Square lattice designs are constructed algebraically from Latin squares or MOLS.
+#' Resolvable incomplete block designs for r replicates of p*p treatments arranged in blocks of size p where
+#' r < p+2 for prime or prime power p or r < 4 for general p are square lattices and 
+#' these designs are constructed automatically from Latin squares or MOLS.
 #'
-#' Rectangular lattice designs are resolvable incomplete block designs for r replicates of (p-1)*p treatments 
-#' arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Rectangular lattice designs are
-#' constructed algebraically by reducing an algebraic square lattice, see 
-#' Cochran and Cox, Experimental Designs. 2nd Edition. Page 417 (Shrikhande method).
+#' Resolvable incomplete block designs for r replicates of (p-1)*p treatments arranged in blocks of size p-1
+#' where r < p+1 for prime or prime power p are rectangular lattices and these designs are constructed automatically
+#' by reducing an appropriate algebraic square lattice, see Cochran and Cox, Experimental Designs, 2nd Edition, 
+#' Page 417 (Shrikhande method).
 #'
 #' Outputs:
 #'
@@ -50,11 +44,11 @@
 #' \item  A plan showing the allocation of treatments to blocks in the bottom level of the design.\cr
 #' }
 #'
-#' @param treatments  the required number of treatments partitioned into sets of equally replicated treatments.
+#' @param treatments  the required number of treatments partitioned into equally replicated treatment sets.
 #'
-#' @param replicates  the treatment replication numbers for each partitioned treatment set.
+#' @param replicates  the replication number for each partitioned treatment set.
 #'
-#' @param blocks the number of nested blocks for each level of nesting from the top down.
+#' @param blocks the number of nested blocks in each level of nesting from the top level down.
 #' 
 #' @param seed an integer initializing the random number generator.
 #'
@@ -112,6 +106,7 @@
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
    options(contrasts=c('contr.SAS','contr.poly'))
+   options(warn=0)
    tol = .Machine$double.eps ^ 0.5
    if (is.list(treatments)) treatments=unlist(treatments)
    if (is.list(blocks)) blocks=unlist(blocks)
@@ -188,44 +183,48 @@
     LT=(droplevels(LT[!LT%in%drop]))
     return(LT)
   }
+  
   # ***************************************************************************************************
   # Maximises the design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the 
   # best swap for D-efficiency improvement. Sampling is used initially when many feasible swaps are 
   # available but later a full search is used to ensure steepest ascent optimization.
   # ***************************************************************************************************
-     DMax=function(VTT,VBB,VTB,TF,MF,fBF,BF,TM) {  
-       locrelD=1
-       mainSizes=tabulate(MF)
-       nSamp=pmin(rep(8,nlevels(MF)), mainSizes)
-       repeat {
-         kmax=1
-         for (k in 1: nlevels(MF)) {
-           s=sort(sample(seq_len(nrow(TF))[MF==levels(MF)[k]], nSamp[k])) 
-           TB=VTB[TF[s,],fBF[s],drop=FALSE]
-           TT=VTT[TF[s,],TF[s,],drop=FALSE]
-           BB=VBB[fBF[s],fBF[s],drop=FALSE]
-           TB=sweep(TB,1,diag(TB))
-           TT=sweep(TT,1,diag(TT))
-           BB=sweep(BB,1,diag(BB))
-           dMat=(TB+t(TB)+1)**2-(TT+t(TT))*(BB+t(BB))
-           sampn=which.max(dMat)
-           i=1+(sampn-1)%%nrow(dMat)
-           j=1+(sampn-1)%/%nrow(dMat)
-           if (dMat[i,j]>kmax) {kmax=dMat[i,j]; pi=s[i]; pj=s[j]} 
-         }
-         if (kmax>(1+tol)) {
-           locrelD=locrelD*kmax
-           up=UpDate(VTT,VBB,VTB,TF[pi,],TF[pj,],fBF[pi],fBF[pj])
-           VTT=up$VTT
-           VBB=up$VBB
-           VTB=up$VTB
-           TF[c(pi,pj),]=TF[c(pj,pi),]
-           TM[c(pi,pj),]=TM[c(pj,pi),]
-         } else if (sum(nSamp) == nrow(TF)) break
-         else nSamp=pmin(mainSizes,2*nSamp)
-       }
-       list(VTT=VTT,VBB=VBB,VTB=VTB,TF=TF,locrelD=locrelD,TM=TM)
-     } 
+  DMax=function(VTT,VBB,VTB,TF,MF,BF,TM,BM) { 
+    fBF=interaction(MF,BF, lex.order = TRUE)
+    locrelD=1
+    mainSizes=tabulate(MF)
+    nSamp=pmin(rep(8,nlevels(MF)), mainSizes)
+    repeat {
+      kmax=1
+      for (k in 1: nlevels(MF)) {
+        s=sort(sample(seq_len(nrow(TF))[MF==levels(MF)[k]], nSamp[k])) 
+        TB=VTB[TF[s,],fBF[s],drop=FALSE]
+        TT=VTT[TF[s,],TF[s,],drop=FALSE]
+        BB=VBB[fBF[s],fBF[s],drop=FALSE]
+        TB=sweep(TB,1,diag(TB))
+        TT=sweep(TT,1,diag(TT))
+        BB=sweep(BB,1,diag(BB))
+        dMat=(TB+t(TB)+1)**2-(TT+t(TT))*(BB+t(BB))
+        sampn=which.max(dMat)
+        i=1+(sampn-1)%%nrow(dMat)
+        j=1+(sampn-1)%/%nrow(dMat)
+        if (dMat[i,j]>kmax) {kmax=dMat[i,j]; pi=s[i]; pj=s[j]} 
+      }
+      if (kmax>(1+tol)) {
+        locrelD=locrelD*kmax
+        up=UpDate(VTT,VBB,VTB,TF[pi,],TF[pj,],fBF[pi],fBF[pj])
+        VTT=up$VTT
+        VBB=up$VBB
+        VTB=up$VTB
+        TF[c(pi,pj),]=TF[c(pj,pi),]
+        TM[c(pi,pj),]=TM[c(pj,pi),]
+      } else if (sum(nSamp) == nrow(TF)) break
+      else nSamp=pmin(mainSizes,2*nSamp)
+    }
+    list(VTT=VTT,VBB=VBB,VTB=VTB,TF=TF,locrelD=locrelD,TM=TM)
+  } 
+  
+ 
   # *************************************************************************************************
   # Updates variance matrix for pairs of swapped treatments using standard matrix updating formula
   # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB
@@ -248,22 +247,21 @@
     VTB = VTB - tcrossprod(Z1,Z2) + tcrossprod(W1,W2) 
     list(VTT=VTT,VBB=VBB,VTB=VTB)
   }  
-
   # *******************************************************************************************************************
   #  Searches for an optimization with selected number of searches and selected number of junps to escape local optima
   # nested blocks only
   # ********************************************************************************************************************
   Optimise=function(TF,MF,BF,VTT,VBB,VTB,TM,BM) {
-    fBF=interaction(MF:BF)
+    fBF=interaction(MF,BF, lex.order = TRUE)
     globrelD=0
     relD=1
     globTF=TF
     blocksizes=tabulate(fBF)
     if (regReps & max(blocksizes)==min(blocksizes) )
-      blocksEffBound=A_bound(nrow(TF),nlevels(TF),nlevels(fBF)) 
+      blocksEffBound=A_bound(n=nrow(TF),v=nlevels(TF),b=nlevels(fBF)) 
     else blocksEffBound=1
     for (r in 1:searches) {
-      dmax=DMax(VTT,VBB,VTB,TF,MF,fBF,BF,TM)
+      dmax=DMax(VTT,VBB,VTB,TF,MF,BF,TM,BM)
       if (dmax$locrelD>(1+tol)) {
         relD=relD*dmax$locrelD
         TF=dmax$TF
@@ -359,24 +357,24 @@
   # must be nested within each main block which is achieved using the reorder function shown below 
   # *****************************************************************************************************************
   blocksOpt=function(TF,MF,BF) {
+      fBF=interaction(MF,BF, lex.order = TRUE)
       TM=model.matrix(as.formula("~treatments"),TF)[,-1,drop=FALSE] # drops mean contrast
-      TM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(TM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
-      if (nlevels(MF)==1) BM=model.matrix(as.formula(~BF))[,-1,drop=FALSE] else
-        BM=model.matrix(as.formula(~BF:MF))[,-1,drop=FALSE]
-      BM=do.call(rbind,lapply(1:length(levels(MF)),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
+      TM=do.call(rbind,lapply(1:nlevels(MF),function(i) {scale(TM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
+      BM=model.matrix(as.formula(~fBF))[,-1,drop=FALSE]
+      BM=do.call(rbind,lapply(1:nlevels(MF),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
       BM=BM[,-c((1:nlevels(MF))*nlevels(BF)) ,drop=FALSE]
       if ((ncol(cbind(TM,BM))+1) > nrow(TM)) stop( paste("Too many parameters: plots =",nrow(TM)," parameters = ",ncol(cbind(TM,BM)))) 
       nonsing=NonSingular(TF,BF,TM,BM,MF)
       TF=nonsing$TF
       TM=nonsing$TM
       V=chol2inv(chol(crossprod(cbind(TM,BM))))
-      VTT = matrix(0, nrow=(1+ncol(TM)), ncol=(1+ncol(TM)) )
+      VTT = matrix(0, nrow=nlevels(TF[,1]), ncol=nlevels(TF[,1]) )
+      VBB = matrix(0, nrow=nlevels(fBF),ncol=nlevels(fBF))
+      VTB = matrix(0, nrow=nlevels(TF[,1]), ncol=nlevels(fBF) )
       VTT[1:ncol(TM),1:ncol(TM)] = V[1:ncol(TM),1:ncol(TM),drop=FALSE]
-      VBB = matrix(0, nrow=ncol(BM)+nlevels(MF),ncol=ncol(BM)+nlevels(MF))
       VBB[1:ncol(BM),1:ncol(BM)] = V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE]
-      VTB = matrix(0, nrow=(1+ncol(TM)), ncol=ncol(BM)+nlevels(MF) )
       VTB[1:ncol(TM),1:ncol(BM)] = V[1:ncol(TM), (ncol(TM)+1):ncol(V), drop=FALSE]
-      reorder=c(rbind( matrix(1:((nlevels(BF)-1)*nlevels(MF)),nrow=(nlevels(BF)-1),ncol=nlevels(MF)),(nlevels(BF)-1)*nlevels(MF)+seq(1,nlevels(MF)))) 
+      reorder=as.vector(rbind( matrix(1:(nlevels(fBF)-nlevels(MF)),nrow=(nlevels(BF)-1),ncol=nlevels(MF)), nlevels(fBF)-nlevels(MF) + seq(1,nlevels(MF))))
       VBB=VBB[reorder,reorder] 
       VTB=VTB[,reorder] 
       TF=Optimise(TF,MF,BF,VTT,VBB,VTB,TM,BM)
@@ -405,7 +403,7 @@
   # Finds efficiency factors for block designs
   # *******************************************************************************************************************************
   BlockEfficiencies=function(blkDesign,TF) {
-    Design=data.frame(lapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i])}),plots=factor(1:nunits),TF)
+    Design=data.frame(lapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i], lex.order = TRUE)}),plots=factor(1:nunits),TF)
     effics=matrix(NA,nrow=(ncol(Design)-2),ncol=2)
     for (i in seq_len(ncol(Design)-2)) 
       effics[i,]=unlist(blockEstEffics(Design[,ncol(Design)],Design[,i]))
@@ -462,10 +460,8 @@
   TF=data.frame(unlist(lapply(1:hcf,function(i){sample(rep(factor(1:ntrts), rep(replicates/hcf,treatments)))})))
   colnames(TF)="treatments"
   nunits=nrow(TF)
-  if (is.null(searches)) 
-    if (nunits<1000) searches=10000%/%nunits else if (nunits<5000) searches=5000%/%nunits else searches=1
+  if (is.null(searches)) searches=1+5000%/%nunits
   if( !is.finite(searches) | is.nan(searches) | searches<1 | searches%%1!=0 ) stop(" searches parameter is invalid")
-  
   if (is.null(names(blocks))) 
     names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j-1)}))
   
@@ -493,7 +489,7 @@
     TF=rectlattice(sR,replicates[1])
   else if ( hcf%%prod(blocks)!=0 ) 
     for (i in 1:length(blocks)) 
-           TF=blocksOpt(TF,interaction(blkDesign[1:i]),blkDesign[,i+1]) 
+           TF=blocksOpt(TF,interaction(blkDesign[1:i], lex.order = TRUE),blkDesign[,i+1]) 
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - try a simpler block or treatment design")
   Efficiencies=BlockEfficiencies(blkDesign,TF) 
   Design=data.frame(blkDesign,plots=factor(1:nunits),treatments=TF)[,-1,drop=FALSE]

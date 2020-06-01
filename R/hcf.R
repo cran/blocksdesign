@@ -3,6 +3,9 @@
 #' @description
 #' Finds the highest common factor (hcf) of a set of integer numbers greater than zero (Euclidean algorithm).
 #' 
+#' @references
+#' Euclidean algorithm, see:\url{https://mathworld.wolfram.com/EuclideanAlgorithm.html}
+#' 
 #' @details
 #' Finds the hcf of any set of positive integers which can be in any order. 
 #' 

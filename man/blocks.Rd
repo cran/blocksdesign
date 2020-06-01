@@ -14,11 +14,11 @@ blocks(
 )
 }
 \arguments{
-\item{treatments}{the required number of treatments partitioned into sets of equally replicated treatments.}
+\item{treatments}{the required number of treatments partitioned into equally replicated treatment sets.}
 
-\item{replicates}{the treatment replication numbers for each partitioned treatment set.}
+\item{replicates}{the replication number for each partitioned treatment set.}
 
-\item{blocks}{the number of nested blocks for each level of nesting from the top down.}
+\item{blocks}{the number of nested blocks in each level of nesting from the top level down.}
 
 \item{searches}{the maximum number of local optima searched for a design optimization.}
 
@@ -37,42 +37,36 @@ blocks(
 \item{jumps}{Number of random treatment swaps used to escape a local maxima.}
 }
 \description{
-Constructs randomized nested blocks for unstructured treatment sets down to any feasible depth of nesting.
+Constructs randomized nested block designs for unstructured treatment sets.
 }
 \details{
-Constructs randomized nested block designs with arbitrary depth of nesting for any arbitrary number of unstructured
-treatment sets.
+Constructs randomized nested block designs for any arbitrary
+number of unstructured treatments and any arbitrary feasible depth of nesting.
 
-\code{treatments} is a set of numbers partitioning the total number of treatments into
-sets of equi-replicate treatments
+\code{treatments} is a set of numbers that partitions the total number of treatments into
+equi-replicate treatment sets.
 
-\code{replicates} is a matching set of treatment replication numbers, one for each treatment 
-set in the partition.
+\code{replicates} is a set of treatment replication numbers that defines the replication number of each equi-replicate
+\code{treatments} set.
 
-\code{blocks} is a set of levels where each number is the number of
-levels nested within each level of the preceding factor. The top single level super-block
-need not be defined.  
- 
- The first number, if any, is the number of nested row blocks in the first-level of nesting, 
-the second number, if any, is the number of nested row blocks in
-the second-level of nesting and so on down to any required feasible depth of nesting.
-
-Block sizes are as nearly equal as possible and will never differ by more than a single plot in any 
-particular block classification. 
+\code{blocks} is a sequence of nested block levels in descending order of block sizes from largest to smallest
+where each block level is the number of blocks nested within each preceding block
+(assuming a single top-level super-block). The block sizes will automatically be as nearly equal as
+ possible and will never differ in size by more than a single plot for any particular level of nesting. 
 
 Unreplicated treatments are allowed and any simple nested block design can be augmented by any number 
-of single unreplicated treatments to give augmented blocks that never differ in size by more than a single plot.
-However, it may sometimes be preferable to find an efficient 
-block design for the replicated treatments and then add the unreplicated treatments to the design heuristically. 
+of unreplicated treatments using the \code{treatments} and \code{replicates} formulae. 
+However, it will usually be preferable to find an efficient block design
+for just the replicated treatment sets and then to add the unreplicated treatments individually by hand. 
 
-Square lattice designs are resolvable incomplete block designs for r replicates of p*p treatments 
-arranged in blocks of size p where r < p+2 for prime or prime power p or r < 4 for general p. 
-Square lattice designs are constructed algebraically from Latin squares or MOLS.
+Resolvable incomplete block designs for r replicates of p*p treatments arranged in blocks of size p where
+r < p+2 for prime or prime power p or r < 4 for general p are square lattices and 
+these designs are constructed automatically from Latin squares or MOLS.
 
-Rectangular lattice designs are resolvable incomplete block designs for r replicates of (p-1)*p treatments 
-arranged in blocks of size p-1 where r < p+1 for prime or prime power p. Rectangular lattice designs are
-constructed algebraically by reducing an algebraic square lattice, see 
-Cochran and Cox, Experimental Designs. 2nd Edition. Page 417 (Shrikhande method).
+Resolvable incomplete block designs for r replicates of (p-1)*p treatments arranged in blocks of size p-1
+where r < p+1 for prime or prime power p are rectangular lattices and these designs are constructed automatically
+by reducing an appropriate algebraic square lattice, see Cochran and Cox, Experimental Designs, 2nd Edition, 
+Page 417 (Shrikhande method).
 
 Outputs:
 

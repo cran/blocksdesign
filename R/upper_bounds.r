@@ -26,7 +26,7 @@
 #'
 #' @export
   A_bound=function(n,v,b) {
-  if ( !isTRUE(all.equal(n%%v,0)) ||  !isTRUE(all.equal(n%%b,0)) || (v+b-1)>n ) return(NA) 
+  if ( !isTRUE(all.equal(n%%v,0)) ||  !isTRUE(all.equal(n%%b,0)) || (v+b-1)>n ) return(1) 
   r = n/v #replication
   if (isTRUE(all.equal(r%%b, 0))) return(1) 
   k = n/b #block size	

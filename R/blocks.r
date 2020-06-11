@@ -76,6 +76,10 @@
 #' ## In practice, the number of searches may need to be increased for optimum results.
 #' ## Designs should be rebuilt several times to check that a near-optimum design has been found.  
 #' 
+#' # 12 treatments with 4 replicates and 1 control treatment with 8 replicates 
+#' # the blocks automatically default to 4 complete randomized blocks each of size 14
+#' blocks(treatments=list(12,1),replicates=list(4,8))
+#' 
 #' # 12 treatments x 4 replicates in 4 complete blocks with 4 sub-blocks of size 3
 #' # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
 #' \donttest{blocks(treatments=12,replicates=4,blocks=list(4,4))}
@@ -112,7 +116,8 @@
    if (is.list(blocks)) blocks=unlist(blocks)
    if (is.list(replicates)) replicates=unlist(replicates)
  # ***********************************************************************************************
- # Tests for and constructs squarelattice designs
+ # Tests for and constructs square lattice designs in top 2 levels of a lattice design.
+ #  Further nested levels for levels 3... etc can be nested within the levels of the lattice blocks
  #  Allocates v*v treatments to blocks assuming a lattice design with r complete replicate blocks
  #  and nested blocks of size v. Returns a simple lattice for r=2 or a triple lattice for 
  #  r=3 for any size of v. Returns a lattice for any r < v + 2 if v is prime or any prime power 
@@ -162,28 +167,32 @@
      } else return(NULL)
      
      TF=factor(sapply(1:(u+2),function(i){seq_len(v*v)[order(as.numeric(mols[[i]]))]}))
-     df=data.frame(Reps=rep(sample(1:(u+2)),each=(v*v)),Blocks=rep(sample(1:(v*(u+2))),each=v),plots=sample(1:(v*v*(u+2))),TF)
-     df=df[ do.call(order, df), ]
-     return(df[,4])
+     TF=data.frame(Reps=rep(sample(1:(u+2)),each=(v*v)),Blocks=rep(sample(1:(v*(u+2))),each=v),plots=sample(1:(v*v*(u+2))),TF)
+     TF=TF[ do.call(order, TF), ]
+     names(TF)[4] = "treatments"
+     rownames(TF)=NULL
+     return(TF[,4,drop=FALSE])
    }
-   
    # **************************************************************************************************
-  # Tests for and constructs rectangularlattice designs
+  # Tests for and constructs rectangularlattice designsin top 2 levels of a rectangular lattice.
+  # Further nested levels for levels 3... etc can be nested within the levels of the rectangular lattice blocks
   # ***************************************************************************************************
-  rectlattice=function(v,r) {
+   rectlattice=function(v,r) {
     LT=squarelattice(v,r-1)
     if (is.null(LT)) return(NULL)
-    LT=split(LT, factor(rep(1:((r+1)*v), each=v))) 
+    
+    LT=split(LT[,1], factor(rep(1:((r+1)*v), each=v))) 
     drop=factor((v*(v-1)+1) : (v*v))
     dropblock=which(sapply (1:length(LT), function(i) all(drop%in%LT[[i]]))   )
     droprep=(dropblock-1)%/%v + 1
     omitblocks=((droprep-1)*v + 1):(droprep*v)
     LT[omitblocks]=NULL
     LT=unlist(LT)
-    LT=(droplevels(LT[!LT%in%drop]))
-    return(LT)
-  }
-  
+    TF=data.frame(droplevels(LT[!LT%in%drop]))
+    names(TF)[1] = "treatments"
+    rownames(TF)=NULL
+    return(TF)
+   }
   # ***************************************************************************************************
   # Maximises the design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the 
   # best swap for D-efficiency improvement. Sampling is used initially when many feasible swaps are 
@@ -351,7 +360,7 @@
   # mean equal to the last treatment or block level which is omittted to give a full rank model. 
   # The variance matrices are calculated by taking contrasts WITHIN each term to give the contrast of each term from the last term.
   # The first term of each model is a zero vector which is moved to the last term to represent the deviations of the last term from itself. 
-  # The covarinaces of the non null terms and the variances and covariances of the last term are invariant and are equated to zero. 
+  # The covariances of the non null terms and the variances and covariances of the last term are invariant and are equated to zero. 
   # The model.matrix function MUST define SAS type contrasts and the options setting for this function are SAS contrasts.
   # For nested blocks, the full set of nested block contrasts including the final column of zeroes
   # must be nested within each main block which is achieved using the reorder function shown below 
@@ -385,7 +394,7 @@
   # *********************************************************************************************** 
   blockEstEffics=function(TF,BF) {
     if (nlevels(BF)==1) return(c(1,1))
-    if (is.data.frame(TF))TF=TF[,1]
+    if (is.data.frame(TF)) TF=TF[,1]
     if (is.data.frame(BF)) BF=BF[,1]
     TM  = scale(model.matrix(~ TF))[,-1]
     BMO = scale(model.matrix(~ BF))[,-1]
@@ -402,14 +411,22 @@
   # *******************************************************************************************************************************
   # Finds efficiency factors for block designs
   # *******************************************************************************************************************************
-  BlockEfficiencies=function(blkDesign,TF) {
+  BlockEfficiencies=function(blkDesign,TF,orthogSize,blocks,hcf) {
+    
     Design=data.frame(lapply(2:ncol(blkDesign),function(i) {interaction(blkDesign[,1:i], lex.order = TRUE)}),plots=factor(1:nunits),TF)
+    sizes=lapply(1:(ncol(Design)-2),function(i) {tabulate(Design[,i])}) 
     effics=matrix(NA,nrow=(ncol(Design)-2),ncol=2)
-    for (i in seq_len(ncol(Design)-2)) 
-      effics[i,]=unlist(blockEstEffics(Design[,ncol(Design)],Design[,i]))
-    bounds=rep(NA,(ncol(Design)-2))
+    
+    for (i in 1:(ncol(Design)-2))  
+      if (hcf%%prod(blocks[1:i])==0 )  
+        effics[i,]=1  else 
+        effics[i,]=unlist(blockEstEffics(Design[,ncol(Design)],Design[,i]))
+    
+    sizes=lapply(1:(ncol(Design)-2),function(i) {tabulate(Design[,i])}) 
+    bounds=sapply(1:(ncol(Design)-2),function(i){( all(floor(sizes[[i]]/orthogSize)==sizes[[i]]/orthogSize))})
+    bounds=sapply(1:length(bounds),  function(i){ if(bounds[i]==FALSE) bounds[i]=NA else bounds[i]=1} )
     if (regReps)
-      for (i in seq_len(ncol(Design)-2)) {
+      for (i in 1:(ncol(Design)-2))  {
         if (nunits%%nlevels(Design[,i])==0 )
           bounds[i]=A_bound(nunits,nlevels(Design[,ncol(Design)]),nlevels(Design[,i]) )
       }
@@ -464,34 +481,51 @@
   if( !is.finite(searches) | is.nan(searches) | searches<1 | searches%%1!=0 ) stop(" searches parameter is invalid")
   if (is.null(names(blocks))) 
     names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j-1)}))
-  
   if (prod(blocks)*2>nunits) stop("Too many blocks for the available plots  - each block must contain at least two plots")
-  
   blkdesign=blocksGrid(blocks)
   colnames(blkdesign)=labels(blocks)
   blkdesign=cbind("Null"=factor(rep("Blocks_1",nrow(blkdesign))),  blkdesign)
   blocksizes=BlockSizes(blocks,nunits)
   blkDesign=blkdesign[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
+  orthogSize=sum(treatments*replicates)/hcf
   
-  regBlocks=isTRUE(all.equal(max(blocksizes), min(blocksizes)))
-  regReps  =isTRUE(all.equal(max(replicates), min(replicates)))
-  k=nunits/prod(blocks)  # average block size
+  if (length(blocks)>1) regBlocks = (floor(nunits/prod(blocks[1:2]))==nunits/prod(blocks[1:2])) else 
+    regBlocks = floor(nunits/blocks)==nunits/blocks
+  regReps = isTRUE(all.equal(max(replicates), min(replicates)))
   
-  simpleD =(regReps & regBlocks & replicates[1]==blocks[1] & length(blocks)==2)
-  sL=sqrt(ntrts)  # dimension of a square lattice 
-  Lattice=(identical(sL,floor(sL)) & replicates[1]<(sL+2) & k==sL)
-  sR=(sqrt(1+4*ntrts)+1)/2 # dimension of a rectangular lattice 
-  rectLat=(identical(sR,floor(sR)) & replicates[1]<(sR+1) & k==(sR-1))
+  if (length(blocks)>1) 
+    k=nunits/prod(blocks[1:2]) else k=nunits/blocks # average block size
+  if (length(blocks)>1) 
+    b=prod(blocks[1:2]) else b=blocks # number of blocks
   
-  if (simpleD & Lattice) 
-    TF=squarelattice(sL,(replicates[1]-2)) 
-  else if (simpleD & rectLat)
-    TF=rectlattice(sR,replicates[1])
-  else if ( hcf%%prod(blocks)!=0 ) 
-    for (i in 1:length(blocks)) 
+  sk=sqrt(ntrts)  # size of blocks of a square lattice 
+  rk=(sqrt(1+4*ntrts)-1)/2 #  size of blocks of a rectangular lattice 
+  
+  Lattice=isTRUE(regBlocks & regReps & identical(sk,floor(sk)) & replicates[1]<(sk+2) & k==sk & 
+             identical(floor(nunits/blocks[1]),nunits/blocks[1]))
+  rectLattice=isTRUE(regBlocks & regReps & identical(rk,floor(rk)) & replicates[1]<(rk+2) & k==rk & 
+                 identical(floor(nunits/blocks[1]),nunits/blocks[1]))
+  if (Lattice) {
+    lsTF=squarelattice(sk,(replicates[1]-2)) 
+    if (length(blocks)>2 & !is.null(lsTF))
+      for (i in 3:length(blocks)) 
+        lsTF=blocksOpt(lsTF,interaction(blkDesign[1:i], lex.order = TRUE),blkDesign[,i+1]) 
+  } else if (rectLattice) {
+    lsTF=rectlattice(rk+1,replicates[1])
+    if (length(blocks)>2 & !is.null(lsTF))
+      for (i in 3:length(blocks)) 
+        lsTF=blocksOpt(lsTF,interaction(blkDesign[1:i], lex.order = TRUE),blkDesign[,i+1]) 
+  } else lsTF=NULL
+  
+  if (!is.null(lsTF)) TF=lsTF else if (is.null(lsTF)) {
+      for (i in 1:length(blocks)) {
+        if (hcf%%prod(blocks[1:i])!=0 ) { 
            TF=blocksOpt(TF,interaction(blkDesign[1:i], lex.order = TRUE),blkDesign[,i+1]) 
+        }
+      }
+  }
   if (is.null(TF)) stop("Unable to find a non-singular solution for this design - try a simpler block or treatment design")
-  Efficiencies=BlockEfficiencies(blkDesign,TF) 
+  Efficiencies=BlockEfficiencies(blkDesign,TF,orthogSize,blocks,hcf)
   Design=data.frame(blkDesign,plots=factor(1:nunits),treatments=TF)[,-1,drop=FALSE]
   V = split( Design[,ncol(Design)], interaction(Design[,1:(ncol(Design)-2)],lex.order = TRUE)) 
   V = lapply(V, function(x){ length(x) =max(blocksizes); x })

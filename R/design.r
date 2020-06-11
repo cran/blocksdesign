@@ -530,7 +530,6 @@
         fixed = interaction( data.frame(lapply(TF[,included,drop=FALSE], factor))  ,drop=TRUE)
       } else fixed = factor(rep(1,nrow(TF))) 
       gDfrac = 0
-      if (nlevels(fixed)>=nrow(BF)) stop("treatments_model has too many restrictions - is the model fully restricted by previous terms?")
       for (i in 1:searches) {
         for (j in 1:nlevels(fixed)) 
           TF[seq(nrow(TF))[fixed==levels(fixed)[j]],]=TF[sample(seq(nrow(TF))[fixed==levels(fixed)[j]]),,drop=FALSE] #randomize within fixed levels

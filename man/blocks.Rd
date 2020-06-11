@@ -84,6 +84,10 @@ Outputs:
 ## In practice, the number of searches may need to be increased for optimum results.
 ## Designs should be rebuilt several times to check that a near-optimum design has been found.  
 
+# 12 treatments with 4 replicates and 1 control treatment with 8 replicates 
+# the blocks automatically default to 4 complete randomized blocks each of size 14
+blocks(treatments=list(12,1),replicates=list(4,8))
+
 # 12 treatments x 4 replicates in 4 complete blocks with 4 sub-blocks of size 3
 # rectangular lattice see Plan 10.10 Cochran and Cox 1957.
 \donttest{blocks(treatments=12,replicates=4,blocks=list(4,4))}

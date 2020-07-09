@@ -339,6 +339,7 @@
         M = qr.Q(QR) # orthogonal basis for M where Q'Q=I
         M
       }
+
       for (u in 1:ncol(BF)) {
         BM1 = scale(model.matrix(as.formula(paste("~",addfactors[u])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
         BM1=orthogM(BM1)
@@ -357,7 +358,7 @@
         TM = NS$TM
         TF = NS$TF 
         
-        if ( !is.null(BM2) & weighting>0)BM=BM2 else BM=BM1
+        if ( !is.null(BM2) & weighting>0) BM=BM2 else BM=BM1
         Info=crossprod(cbind(TM,BM))
         # down weights two factor interactions if present
         if (!is.null(BM2) && ncol(BM2)>ncol(BM1) && weighting>0)
@@ -406,15 +407,13 @@
             TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),,drop=FALSE]
           } #jumps
         } #searches
-        TM=globTM
         TF=globTF 
-     
+        TM=globTM
         E1=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM1)),symmetric=TRUE,only.values = TRUE)
         if (all(E1$values>tol)) { 
           D_Effic[u]=prod(E1$values)**(1/ncol(TM))
           A_Effic[u]=ncol(TM)/sum(1/E1$values)
         }
-        
         if (!is.null(BM2)) {
           E2=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM2)),symmetric=TRUE,only.values = TRUE)
           if (all(E2$values>tol)) { 
@@ -426,13 +425,12 @@
           A_IntEff[u]=0
         }
       } # list length
-
       Effics1=data.frame(First_order_model=addfactors,effects=Add_levs,"D-Efficiency"= round(D_Effic,5),"A-Efficiency"= round(A_Effic,5))
       Effics2=data.frame(Second_order_model=prodfactors,effects=Int_levs,"D-Efficiency"= round(D_IntEff,5),"A-Efficiency"= round(A_IntEff,5))
       Effics=cbind(Effics1,Effics2)
       list(TF=TF,TM=TM,Effics=Effics)
     } 
-     
+ 
    # *******************************************************************************************************************
    # Updates variance matrix for pairs of swapped treatments using standard matrix updating formula
    # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB
@@ -642,7 +640,7 @@
     if (!is.numeric(weighting)) stop("weighting must be a number between 0 and 1")
     if (weighting<0 | weighting>1) stop("weighting must be a number between 0 and 1")
     if (max(sapply(BF, nlevels))>1) {
-      TM = model.matrix(as.formula(treatments_model[length(treatments_model)]),TF) # full treatments_model model.matrix
+      TM = scale(model.matrix(as.formula(treatments_model[length(treatments_model)]),TF),center=TRUE,scale=FALSE)[,-1,drop=FALSE] # centred model.matrix
       TM = qr.Q(qr(TM)) # orthogonal basis for TM 
       Opt=blocksOpt(TF,TM,BF)
       TM=Opt$TM

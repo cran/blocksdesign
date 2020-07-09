@@ -2,8 +2,8 @@ Package: blocksdesign
 Type: Package
 Title: Nested and Crossed Block Designs for Factorial and Unstructured
         Treatment Sets
-Version: 4.2
-Date: 2020-06-11"
+Version: 4.3
+Date: 2020-07-09"
 Author: R. N. Edmondson.
 Maintainer: Rodney Edmondson <rodney.edmondson@gmail.com>
 Depends: R (>= 3.1.0)
@@ -20,11 +20,11 @@ Description: Constructs D-optimal or near D-optimal treatment and block designs 
 License: GPL (>= 2)
 Imports: lme4, plyr, PolynomF
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 Suggests: R.rsp
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2020-06-11 18:34:25 UTC; rodney
+Packaged: 2020-07-09 18:24:44 UTC; rodney
 Repository: CRAN
-Date/Publication: 2020-06-11 19:00:07 UTC
+Date/Publication: 2020-07-09 18:50:02 UTC

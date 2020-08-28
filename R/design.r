@@ -10,7 +10,7 @@
 #' @param blocks a single block factor or data frame for the required combinations of 
 #' block factors in the required order of fitting assuming quantitative block factor levels only.
 #' 
-#' @param treatments_model a treatment model formula for the required treatment design.
+#' @param treatments_model a character vector containing one or more nested treatment model formula. 
 #' 
 #' @param weighting a weighting factor between 0 and 1 for weighting the 2-factor interaction effects of
 #' factorial blocks.
@@ -22,20 +22,17 @@
 #'
 #' @param jumps the number of pairwise random treatment swaps used to escape a local maxima. 
 #' 
-#' @param resample whether treatments are sampled with or without replacement from the candidate set .
 #' 
 #' @details
 #' 
 #' \code{treatments} is a factor or data frame containing one or more qualitative
-#' or quantitative level treatment factors defining the candidate treatment set.
-#' If the size of the candidate set is different from the size of the block design, 
-#' or if the \code{treatments_model} is structured, a D-optimum treatment design of the required size is
-#' selected from the candiate set. Treatments can be selected either with or without 
-#' replacement depending on the \code{resample} parameter. If \code{resample} is TRUE, selected treatments
-#' are replaced in the candidate set after selection, which allows for repeated sampling of the same treatment
-#' combination. If \code{resample} is FALSE, selected treatments are deleted from
-#' the candidate set, which means that no treatment can be repeated in the final design more often than
-#' it occurs in the original candidate set.
+#' or quantitative level treatment factors defining the candidate treatment set. The 
+#' required treatment design is selected from the candidate treatment set without replacement.
+#' If the candidate set is the same size as the required design the full candidate set will be
+#' selected. If the candidate set is larger than the required design size, a subset of the candidate set 
+#' will be selected by optimizing the treatment design D-optimality criterion. If the candidate set is
+#' smaller than the required design size, the candidate set will be replicated until the candidate set
+#' equals or exceeds the required design size.
 #' 
 #' \code{blocks} is a factor or data frame containing one or more qualitative level block factor where the block factors are optimized
 #' by adding block factors sequentially from left to right. If the blocks are fully nested or if the design has crossed blocks with 
@@ -49,10 +46,9 @@
 #' to the additive block effects with the importance of the interaction effects assumed to increase as w increases from 0 to 1. The length
 #' of the \code{blocks} object defines the total number of plots in the design. 
 #'  
-#' \code{treatments_model} is either a single formula or a compound formula split by the \code{|} operator.
-#' The left hand side of each \code{|}, assuming all preceding splitting operators \code{|} are replaced by 
-#' \code{+}, is a partial model formula. Partial model formulae define partial design matrices which are fitted
-#' and optimized sequentially from left to right. Sequential model fitting provides improved flexibility
+#' \code{treatments_model} is a character vector containing one or more nested treatments formula where
+#' the treatment factors are optimized for each treatments model formula taken in order with 
+#' all previously optimized treatment factors remaining constant. Sequential model fitting provides improved flexibility
 #' for fitting factors or variables of different status or importance (see examples below).
 #' 
 #' The treatment design criterion for each treatment model is the generalized variance of the information matrix for that design 
@@ -211,9 +207,8 @@
 #' blocks=data.frame(main=gl(2,12))
 #' treatments_model = " ~  (Variety + N + K)^2  + I(N^2) + I(K^2)"
 #' design(treatments,blocks,treatments_model=treatments_model,searches=10) 
-#' treatments_model = " ~ Variety | (Variety + N + K)^2 + I(N^2) + I(K^2)"
+#' treatments_model = c(" ~ Variety" ," ~ Variety + (Variety + N + K)^2 + I(N^2) + I(K^2)")
 #' design(treatments,blocks,treatments_model=treatments_model,searches=10)
-#' 
 #' 
 #' @export
 #' @importFrom stats anova lm model.matrix as.formula setNames 
@@ -221,7 +216,7 @@
 #' @importFrom plyr count
 #' @importFrom plyr match_df
 #' 
-  design = function(treatments,blocks=NULL,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1,resample=FALSE) {
+  design = function(treatments,blocks=NULL,treatments_model=NULL,weighting=0.5,searches=NULL,seed=NULL,jumps=1) {
     tol = .Machine$double.eps ^ 0.5
     options(contrasts=c('contr.SAS','contr.poly'))
     options(warn=0)
@@ -254,7 +249,7 @@
       repeat {
         kmax=1
         for (k in 1: nlevels(mainBlocks)) {
-          s=sort(sample((1:nrow(TF))[mainBlocks==levels(mainBlocks)[k]] , nSamp[k])) 
+          s=sort(sample((1:nrow(TF))[mainBlocks==levels(mainBlocks)[k]], nSamp[k])) 
           dMat=dMat(TM,BM,V,s)
           z=which(dMat == max(dMat,na.rm=TRUE), arr.ind = TRUE)[1,]
           if (dMat[z[1],z[2]]>kmax) {
@@ -265,7 +260,7 @@
         }
         if (kmax>(1+tol)) {
           locrelD=locrelD*kmax
-          V=UpDate(V,(TM[pi,,drop=TRUE]-TM[pj,,drop=TRUE]),(BM[pj,,drop=TRUE]-BM[pi,,drop=TRUE])  )
+          V=UpDate(V,(TM[pi,,drop=TRUE]-TM[pj,,drop=TRUE]),(BM[pj,,drop=TRUE]-BM[pi,,drop=TRUE]),ncol(TM)  )
           TM[c(pi,pj),]=TM[c(pj,pi),,drop=FALSE]
           TF[c(pi,pj),]=TF[c(pj,pi),,drop=FALSE]
         }  else if (sum(nSamp) == nrow(TF)) break
@@ -322,7 +317,6 @@
     # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
     # Each factor in BF may include levels from preceding factors hence qr pivoting is essential to sweep out factor dependencies  
     # ************************************************************************************************************************
-
     blocksOpt=function(TF,TM,BF) {
       IBF=data.frame(factor(rep(1,nrow(TF))),lapply(1:ncol(BF), function(i) droplevels(interaction(BF[,c(1:i)]))))
       colnames(IBF)=c("mean",unlist(lapply(1:ncol(BF),function(j){paste0(colnames(BF)[1:j],collapse=".")})))
@@ -339,7 +333,6 @@
         M = qr.Q(QR) # orthogonal basis for M where Q'Q=I
         M
       }
-
       for (u in 1:ncol(BF)) {
         BM1 = scale(model.matrix(as.formula(paste("~",addfactors[u])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
         BM1=orthogM(BM1)
@@ -354,10 +347,11 @@
         }
         if (is.null(BM2))
           NS = blocksNonSingular(TF,TM,BM1,IBF[,u,drop=TRUE],BF[,u,drop=TRUE])
+        
         if (NS$fullrank==FALSE)  stop("Cannot find a non-singular starting block design - perhaps try a simpler design? ")
         TM = NS$TM
         TF = NS$TF 
-        
+    
         if ( !is.null(BM2) & weighting>0) BM=BM2 else BM=BM1
         Info=crossprod(cbind(TM,BM))
         # down weights two factor interactions if present
@@ -402,7 +396,7 @@
             }
             if (counter>500) break
             relD=relD*Dswap 
-            V=UpDate(V,(TM[s[1],,drop=TRUE]-TM[s[2],,drop=TRUE]),(BM[s[2],,drop=TRUE]-BM[s[1],,drop=TRUE]))
+            V=UpDate(V,(TM[s[1],,drop=TRUE]-TM[s[2],,drop=TRUE]),(BM[s[2],,drop=TRUE]-BM[s[1],,drop=TRUE]),ncol(TM))
             TM[c(s[1],s[2]),]=TM[c(s[2],s[1]),,drop=FALSE] 
             TF[c(s[1],s[2]),]=TF[c(s[2],s[1]),,drop=FALSE]
           } #jumps
@@ -436,11 +430,11 @@
    # mtb**2-mtt*mbb is > 0 because the swap is a positive element of dMat=(TB+t(TB)+1)**2-TT*BB
    # 2*mtb+mtt+mbb > mtt + mbb + 2*(mtt*mbb)**.5 > 0 because mtb**2 > mtt*mbb
    # *******************************************************************************************************************
-   UpDate=function(V,t,b) {
-     VTTt=crossprod(V[1:length(t),1:length(t),drop=FALSE],t)
-     VBBb=crossprod(V[(1+length(t)):ncol(V),(1+length(t)):ncol(V),drop=FALSE]  ,b)
-     VTBt=crossprod(V[1:length(t),(1+length(t)):ncol(V),drop=FALSE],t)
-     VTBb=crossprod(V[(1+length(t)):ncol(V),1:length(t),drop=FALSE],b)
+   UpDate=function(V,t,b,v) {
+     VTTt=crossprod(V[1:v,1:v,drop=FALSE],t)
+     VBBb=crossprod(V[(1+v):ncol(V),(1+v):ncol(V),drop=FALSE]  ,b)
+     VTBt=crossprod(V[1:v,(1+v):ncol(V),drop=FALSE],t)
+     VTBb=crossprod(V[(1+v):ncol(V),1:v,drop=FALSE],b)
      tMt=as.numeric(crossprod(t,VTTt))
      bMb=as.numeric(crossprod(b,VBBb))
      tMb=as.numeric(crossprod(b,VTBt))
@@ -451,15 +445,16 @@
      a=(tMt+bMb+2*tMb)/2
      b=(tMt+bMb-2*tMb)/2
      c=(bMb-tMt)/2
-     V[1:length(t),1:length(t)] = V[1:length(t),1:length(t), drop=FALSE]-
-       (tcrossprod(f1)*(1-b) - tcrossprod(g1)*(1+a) + (tcrossprod(g1,f1)+tcrossprod(f1,g1))*c)/((1+a)*(1-b)+c*c)
-     V[(1+length(t)):ncol(V),(1+length(t)):ncol(V)] = V[(1+length(t)):ncol(V),(1+length(t)):ncol(V),drop=FALSE]- 
-       (tcrossprod(f2)*(1-b) - tcrossprod(g2)*(1+a) + (tcrossprod(g2,f2)+tcrossprod(f2,g2))*c)/((1+a)*(1-b)+c*c)
-     V[1:length(t),(1+length(t)):ncol(V)] = V[1:length(t),(1+length(t)):ncol(V),drop=FALSE]-
-       (tcrossprod(f1,f2)*(1-b) - tcrossprod(g1,g2)*(1+a) + (tcrossprod(g1,f2)+tcrossprod(f1,g2))*c)/((1+a)*(1-b)+c*c)
-     V[(1+length(t)):ncol(V), 1:length(t)]= t(V[1:length(t),(1+length(t)):ncol(V),drop=FALSE])
+     div=(1+a)*(1-b)+c*c
+     V[1:v,1:v] = V[1:v,1:v, drop=FALSE]-(tcrossprod(f1)*(1-b) - tcrossprod(g1)*(1+a) + (tcrossprod(g1,f1)+tcrossprod(f1,g1))*c)/div
+     V[(1+v):ncol(V),(1+v):ncol(V)] = V[(1+v):ncol(V),(1+v):ncol(V),drop=FALSE]- 
+       (tcrossprod(f2)*(1-b) - tcrossprod(g2)*(1+a) + (tcrossprod(g2,f2)+tcrossprod(f2,g2))*c)/div
+     V[1:v,(1+v):ncol(V)] = V[1:v,(1+v):ncol(V),drop=FALSE]-
+       (tcrossprod(f1,f2)*(1-b) - tcrossprod(g1,g2)*(1+a) + (tcrossprod(g1,f2)+tcrossprod(f1,g2))*c)/div
+     V[(1+v):ncol(V), 1:v]= t(V[1:v,(1+v):ncol(V),drop=FALSE])
      return(V)
    }
+   
   # ******************************************************************************************************************
   # Updates variance matrix for swapped rows where mi is swapped out and qj is swapped in
   # ******************************************************************************************************************
@@ -474,69 +469,53 @@
     V=V-(tcrossprod(U)-tcrossprod(W))/((1+a)*(1-b)+c*c)
     return(V)
   }
-  # *********************************************************************************************************************
-  # Reform treatmnents-model
-  # *******************************************************************************************************************
-  reform=function(TF,treatments_model) {
-    if (is.null(treatments_model)) treatments_model=paste("~",paste(colnames(TF),collapse="*"))
-    seq_models=unlist(strsplit(treatments_model,split='|', fixed=TRUE))
-    if (length(seq_models)>1)
-      treatments_model = sapply(1:length(seq_models),function(j){ paste0( seq_models[1:j] ,collapse="+") })
-    treatments_model
-  }
   # ******************************************************************************************************************
-  # non singular starting design for the first nunits of TF given the design matrix TM and fixed restrictions
+  # non singular starting design for the first nunits of TF given the design matrix TM
   # ******************************************************************************************************************
-  nonSingular=function(TF,fixed,model_formula) {
-    TM=model.matrix(as.formula(model_formula),TF)
-    Q=qr(t(TM))
-    if (Q$rank<ncol(TM)) stop("Unable to find a non-singular design for the treatment model based on the supplied treatment levels")
-    if (nlevels(fixed)==1) {
-      TF=TF[Q$pivot,,drop=FALSE]
-      TM=TM[Q$pivot,,drop=FALSE]
-    } else {
-      rank=qr(TM[1:nrow(BF),,drop=FALSE])$rank
-      for (z in seq_len(10000)) {
+  nonSingular=function(TF,mod,fixed) {
+    TM=model.matrix(as.formula(treatments_model[mod]),TF)
+    rank=qr(TM[1:nrow(BF),])$rank
+      for (z in seq_len(1000)) {
         if (identical(ncol(TM),rank)) break
-        pi=sample(1:nrow(BF),1)
-        pj=sample(which(fixed==fixed[pi]),1)
-        TM[c(pi,pj),]=TM[c(pj,pi),,drop=FALSE]
-        newrank=qr(TM[1:nrow(BF),,drop=FALSE])$rank
-        if(newrank<rank){
-          TM[c(pi,pj),]=TM[c(pj,pi),,drop=FALSE]
-        } else {
-          rank=newrank
-          TF[c(pi,pj),]=TF[c(pj,pi),,drop=FALSE]
-        } 
+        k=sample(nlevels(fixed),1)
+        available=which(fixed==levels(fixed)[k])
+        swapout=available[available<=nrow(BF)]
+        swapin= available[available>nrow(BF)]
+        if (length(swapin)==0 | length(swapout)==0) next 
+        if (length(swapin)>1)  p2 = sample(swapin, 1) else  p2 = swapin
+        if (length(swapout)>1) p1 = sample(swapout, 1) else p1 = swapout 
+        TM[c(p1,p2),] = TM[c(p2,p1),]
+        TF[c(p1,p2),] = TF[c(p2,p1),]
+        newrank = qr(TM[1:nrow(BF),])$rank
+        if (newrank<rank) {
+          TM[c(p1,p2),] = TM[c(p2,p1),]
+          TF[c(p1,p2),] = TF[c(p2,p1),]
+        } else rank=newrank
       }
-      if (z==10000) stop("cannot find a non-singular solution")
-    }
-    return(list(TF=TF,TM=TM))
+      if (!identical(ncol(TM),rank)) stop ("Cannot find a starting design")
+      return(TF) 
   }
   # *********************************************************************************************************************
-  # Fractional factorials for quantitative level factors - allows resample of swapped rows from candidate set new
+  # Fractional factorials for quantitative level factors - allows replacement of swapped rows from candidate set
   # *******************************************************************************************************************
-  factorial = function(TF,treatments_model,null_model) {
-    TF=TF[unlist(lapply(1:ceiling(nrow(BF)/nrow(TF)),function(i) {sample(seq(nrow(TF)))})), ,drop=FALSE]
-    rownames(TF)=NULL
-    rank = qr(model.matrix(as.formula(treatments_model[length(treatments_model)]),TF))$rank
-    if (rank>nrow(BF)) stop("too many full model treatment parameters for the given number of experimental units")
-    if (!resample & isTRUE(all.equal(nrow(BF),nrow(TF)))) return(TF) # choice of treatments is fixed - no optimization is possible
+  factorial = function(TF,treatments_model) {
+    fullrand = unlist(lapply(1:ceiling(nrow(BF)/nrow(TF)),function(j){sample(seq_len(nrow(TF)))}))
+    TF = TF[fullrand,,drop=FALSE]
     for (mod in 1:length(treatments_model)) {
-      if (mod>1) { 
+      TM=model.matrix(as.formula(treatments_model[mod]),TF)
+      if (ncol(TM)>nrow(BF)) stop("too many treatment parameters to be estimated for the given number of experimental units")
+      Dmax = exp((determinant(crossprod(TM),logarithm = TRUE)$modulus)/ncol(TM))/nrow(TM)
+      if (mod==1) fixed = factor(rep(1,nrow(TF)))
+      if (mod>1) {
         included=sapply(1:ncol(TF),function(j){grepl(colnames(TF)[j],treatments_model[mod-1],fixed=TRUE)}) 
-        fixed = interaction( data.frame(lapply(TF[,included,drop=FALSE], factor))  ,drop=TRUE)
-      } else fixed = factor(rep(1,nrow(TF))) 
+        fixed = interaction( data.frame(lapply(TF[,included,drop=FALSE], factor)), drop=TRUE) }
+      if (nlevels(fixed)>nrow(TF)) stop("treatments_model has too many restrictions - is the model fully restricted by previous terms?")
       gDfrac = 0
       for (i in 1:searches) {
-        for (j in 1:nlevels(fixed)) 
-          TF[seq(nrow(TF))[fixed==levels(fixed)[j]],]=TF[sample(seq(nrow(TF))[fixed==levels(fixed)[j]]),,drop=FALSE] #randomize within fixed levels
-        rank = qr(model.matrix(as.formula(treatments_model[mod]),TF))$rank
-        if (rank>nrow(BF)) stop("too many treatment parameters to be estimated for the given number of experimental units")
-        W = nonSingular(TF,fixed,treatments_model[mod]) 
-        TF = W$TF
-        TM = W$TM
-        if (i==1) Dmax = exp((determinant(crossprod(TM),logarithm = TRUE)$modulus)/ncol(TM))/nrow(TM)
+        for (x in 1:nlevels(fixed)) 
+          TF[seq(nrow(TF))[fixed==levels(fixed)[x]],] = TF[sample(seq(nrow(TF))[fixed==levels(fixed)[x]]),,drop=FALSE]
+        TF= nonSingular(TF,mod,fixed) 
+        TM=model.matrix(as.formula(treatments_model[mod]),TF)
         V = chol2inv(chol(crossprod(TM[1:nrow(BF),,drop=FALSE]))) # V is the variance matrix of the the non-singular starting design
         counter=0
         locrelD=1
@@ -544,16 +523,13 @@
           kmax=1
           counter=counter+1
           for (k in 1: nlevels(fixed)) {
-            available=which(fixed==levels(fixed)[k])
-            swapout=available[available<(nrow(BF)+1)]
-            if (resample==TRUE) swapin = available # swap-in from full treatment set allowing repeated selection of sane element more than once
-            if (resample==FALSE) swapin = available[available>nrow(BF)] # swap-in from excess treatment set only   
-            if ( (length(swapin)==0 | length(swapout)==0)) 
-              if (k<nlevels(fixed)) next else break
-            if (length(swapin)>1) swap_in = sample(swapin, min(1024,length(swapin)) ) 
-            else swap_in = swapin
-            if (length(swapout)>1) swap_out = sample(swapout, min(1024,length(swapout)) ) 
-            else swap_out = swapout
+            available = which(fixed==levels(fixed)[k])
+            swapout = available[available<=nrow(BF)]
+            swapin = available[available> nrow(BF)]
+            if ( (length(swapin)==0 | length(swapout)==0) & k<nlevels(fixed)  ) next 
+            if ( (length(swapin)==0 | length(swapout)==0) & k==nlevels(fixed) ) break 
+            if (length(swapin)>1)  swap_in = sample(swapin, min(1024,length(swapin)))  else swap_in = swapin
+            if (length(swapout)>1) swap_out=sample(swapout, min(1024,length(swapout))) else swap_out = swapout
             M1VM2 =        tcrossprod(tcrossprod(TM[swap_out,,drop=FALSE],V),TM[swap_in,,drop=FALSE])
             M1VM1 = 1-diag(tcrossprod(tcrossprod(TM[swap_out,,drop=FALSE],V),TM[swap_out,,drop=FALSE]))
             M2VM2 = 1+diag(tcrossprod(tcrossprod(TM[swap_in,,drop=FALSE],V),TM[swap_in,,drop=FALSE]))
@@ -568,20 +544,15 @@
           if (kmax>(1+tol)) {
             counter=0
             locrelD=locrelD*kmax
-            V = fractUpDate(V,TM[pi,,drop=TRUE],TM[pj,,drop=TRUE])   
-            if (resample==FALSE) {
-              TM[c(pi,pj),]=TM[c(pj,pi),,drop=FALSE]
-              TF[c(pi,pj),]=TF[c(pj,pi),,drop=FALSE]
-            } else if (resample==TRUE) {
-              TM[pi,]=TM[pj,,drop=FALSE]
-              TF[pi,]=TF[pj,,drop=FALSE]
-            }
+            V = fractUpDate(V,TM[pi,],TM[pj,])   # parameters(V,row_swappedout,row_swappedin) 
+            TM[c(pi,pj),]=TM[c(pj,pi),]
+            TF[c(pi,pj),]=TF[c(pj,pi),]
           }
-          if (counter>4 | (counter==1 & length(swapin)<1024 & length(swapout)<1024))  break # either all options tested once or five non-improving samples tested 
-          }
+          if (counter==5)  break
+          if (counter==1 & length(swapin)<=1024 & length(swapout)<=1024) break
+        }
         Dfrac = exp((determinant(crossprod(TM[1:nrow(BF),,drop=FALSE]),logarithm = TRUE)$modulus)/ncol(TM))/nrow(BF)
         if (Dfrac>gDfrac) {
-          gTM=TM
           gTF=TF
           gDfrac=Dfrac
         }
@@ -590,49 +561,51 @@
     }
     return(gTF[1:nrow(BF),,drop=FALSE])
   }
-  
+  # *********************************************************************************************************************
+  #  Tests if all factors are fully nested AND if all nested blocks are of equal size for each level of nesting
+  # *******************************************************************************************************************
+  equinested=function(BF) {
+    for (i in 1:ncol(BF)) {
+      if ( !isTRUE(nlevels(interaction( BF[,c(1:i)],drop=TRUE))==nlevels(BF[,i,drop=TRUE]))) return(FALSE)
+      k=table(BF[,i])
+      if (!all(k==k[1])) return(FALSE)
+    }
+    return(TRUE)
+  }
+  # *********************************************************************************************************************
+  #  treatment information
+  # *******************************************************************************************************************
+  information=function(TF,treatments_model) {
+  info=sapply(1:length(treatments_model),function(i) {
+    TM = model.matrix(as.formula(treatments_model[i]),TF)
+    exp(determinant(crossprod(TM),logarithm = TRUE)$modulus/ncol(TM))/nrow(TM)})
+  return(info)
+  }
   # *************************************************************************************************************************
   # Main design program tests, optimizes treatment design then optimizes block design sequentially for each added block factor
   # *************************************************************************************************************************
   TF=data.frame(treatments)
   if (is.null(blocks)) blocks= gl(1,nrow(TF))
-    BF=data.frame(blocks)
+  BF=data.frame(blocks)
   if (!all(sapply(BF,is.factor))) stop("blocks must be factors")
   if (jumps<1 | jumps%%1!=0 | jumps>10) stop("min. jumps is 1 and max. jumps is 10")
   if (is.null(searches)) searches=1+5000%/%nrow(BF)
   if (searches<1 | searches%%1!=0) stop(" searches parameter is invalid")
-  ## treatments design - treatments_model may have more than one component set of treatments
-  null_model=is.null(treatments_model)
-  if (null_model) treatments_model=paste("~",paste(colnames(TF),collapse="*"))
-  treatments_model=reform(TF,treatments_model)
+  if (is.null(treatments_model)) treatments_model=paste("~",paste(colnames(TF),collapse="*"))
   TF=do.call(rbind,lapply(1:ceiling(nrow(BF)/nrow(TF)),function(j){TF})) # ensure TF is at least as long as BF
-  Effics0=sapply(1:length(treatments_model),function(i) {
-    TM = model.matrix(as.formula(treatments_model[i]),TF)
-    exp(determinant(crossprod(TM),logarithm = TRUE)$modulus/ncol(TM))/nrow(TM)})
-  TF=factorial(TF,treatments_model,null_model)
-  Effics=sapply(1:length(treatments_model),function(i) {
-    TM = model.matrix(as.formula(treatments_model[i]),TF)
-    round((exp(determinant(crossprod(TM),logarithm = TRUE)$modulus/ncol(TM))/nrow(TM)/Effics0[i]),6)})
-  DF=sapply(1:length(treatments_model),function(i) {ncol(model.matrix(as.formula(treatments_model[i]),TF)) -1})
-  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = DF ,"D-Efficiency" = Effics))
- 
-  ## blocks design
-  equinested =  all(sapply( 1:ncol(BF),function(i) {
-    T  = table( interaction( BF[,c(1:i)],drop=TRUE) , BF[,i,drop=TRUE] )
-    all(nrow(T)==ncol(T) & T[!diag(nrow(T))] == 0 & abs( max(diag(T)) - min(diag(T)) ) < tol ) 
-  }))
+  infobase=information(TF,treatments_model)
+  TF=factorial(TF,treatments_model)
   addfactors  =unlist(lapply(1:ncol(BF),function(j){ paste0("(",paste0(colnames(BF)[1:j],collapse="+"),")"  )  }) )
   prodfactors =unlist(lapply(1:ncol(BF),function(j){ paste0("(",paste0(colnames(BF)[1:j],collapse="+"),")^2")  }) )
-   # nested equi-block designs with a single unstructured treatment factor uses blocks() function
-  if (equinested & ncol(TF)==1 & is.factor(TF[,1])) {
-    tlevs=levels(TF[,1])
+   # nested equi-block designs with a single unstructured treatment factor optimized by using blocks() function
+  if (equinested(BF) & ncol(TF)==1 & is.factor(TF[,1])) {
     blevs=c(1,sapply(BF, nlevels))
     blevs=sapply(2:length(blevs), function(i){blevs[i]/blevs[i-1]})
     Z=blocks(rep(1,nlevels(TF[,1])),table(TF[,1,drop=TRUE]),blevs,searches=searches,seed=seed,jumps=1)
     Treatments=Z$Treatments
-    levels(Treatments[,1]) = tlevs
     Design=Z$Design
-    levels(Design[,ncol(Design)]) = tlevs
+    levels(Treatments[,1]) = levels(TF[,1])
+    levels(Design[,ncol(Design)]) = levels(TF[,1])
     blocksModel=Z$Blocks_model[,-1]
     blocksModel=data.frame(Model=addfactors,blocksModel)
     weighting=NULL
@@ -652,6 +625,12 @@
   }
   rownames(Design)=NULL
   rownames(Treatments)=NULL
+  
+  # Table for Treatments_model DF and efficiency
+  EfficsTrts=round(information(TF,treatments_model)/infobase,6)
+  DF=sapply(1:length(treatments_model),function(i) {ncol(model.matrix(as.formula(treatments_model[i]),TF)) -1})
+  treatsModel=data.frame(cbind("Treatment model" = treatments_model,"Model DF" = DF ,"D-Efficiency" = EfficsTrts))
+  
   list(Treatments=Treatments,Design=Design,Treatments_model=treatsModel,Blocks_model=blocksModel,
        weighting=weighting,seed=seed,searches=searches,jumps=jumps)
   }

@@ -11,8 +11,7 @@ design(
   weighting = 0.5,
   searches = NULL,
   seed = NULL,
-  jumps = 1,
-  resample = FALSE
+  jumps = 1
 )
 }
 \arguments{
@@ -22,7 +21,7 @@ of treatment factor combinations assuming any combination of qualitative or quan
 \item{blocks}{a single block factor or data frame for the required combinations of 
 block factors in the required order of fitting assuming quantitative block factor levels only.}
 
-\item{treatments_model}{a treatment model formula for the required treatment design.}
+\item{treatments_model}{a character vector containing one or more nested treatment model formula.}
 
 \item{weighting}{a weighting factor between 0 and 1 for weighting the 2-factor interaction effects of
 factorial blocks.}
@@ -33,8 +32,6 @@ optimization.}
 \item{seed}{an integer initializing the random number generator.}
 
 \item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima.}
-
-\item{resample}{whether treatments are sampled with or without replacement from the candidate set .}
 }
 \value{
 \item{Treatments}{The treatments included in the design and the replication of each individual 
@@ -54,15 +51,13 @@ factors.
 }
 \details{
 \code{treatments} is a factor or data frame containing one or more qualitative
-or quantitative level treatment factors defining the candidate treatment set.
-If the size of the candidate set is different from the size of the block design, 
-or if the \code{treatments_model} is structured, a D-optimum treatment design of the required size is
-selected from the candiate set. Treatments can be selected either with or without 
-replacement depending on the \code{resample} parameter. If \code{resample} is TRUE, selected treatments
-are replaced in the candidate set after selection, which allows for repeated sampling of the same treatment
-combination. If \code{resample} is FALSE, selected treatments are deleted from
-the candidate set, which means that no treatment can be repeated in the final design more often than
-it occurs in the original candidate set.
+or quantitative level treatment factors defining the candidate treatment set. The 
+required treatment design is selected from the candidate treatment set without replacement.
+If the candidate set is the same size as the required design the full candidate set will be
+selected. If the candidate set is larger than the required design size, a subset of the candidate set 
+will be selected by optimizing the treatment design D-optimality criterion. If the candidate set is
+smaller than the required design size, the candidate set will be replicated until the candidate set
+equals or exceeds the required design size.
 
 \code{blocks} is a factor or data frame containing one or more qualitative level block factor where the block factors are optimized
 by adding block factors sequentially from left to right. If the blocks are fully nested or if the design has crossed blocks with 
@@ -76,10 +71,9 @@ block effects only are optimized. If 0 < w < 1, the 2-factor block interaction e
 to the additive block effects with the importance of the interaction effects assumed to increase as w increases from 0 to 1. The length
 of the \code{blocks} object defines the total number of plots in the design. 
  
-\code{treatments_model} is either a single formula or a compound formula split by the \code{|} operator.
-The left hand side of each \code{|}, assuming all preceding splitting operators \code{|} are replaced by 
-\code{+}, is a partial model formula. Partial model formulae define partial design matrices which are fitted
-and optimized sequentially from left to right. Sequential model fitting provides improved flexibility
+\code{treatments_model} is a character vector containing one or more nested treatments formula where
+the treatment factors are optimized for each treatments model formula taken in order with 
+all previously optimized treatment factors remaining constant. Sequential model fitting provides improved flexibility
 for fitting factors or variables of different status or importance (see examples below).
 
 The treatment design criterion for each treatment model is the generalized variance of the information matrix for that design 
@@ -222,9 +216,8 @@ treatments = expand.grid(Variety = factor(1:4), N = 1:3, K = 1:3)
 blocks=data.frame(main=gl(2,12))
 treatments_model = " ~  (Variety + N + K)^2  + I(N^2) + I(K^2)"
 design(treatments,blocks,treatments_model=treatments_model,searches=10) 
-treatments_model = " ~ Variety | (Variety + N + K)^2 + I(N^2) + I(K^2)"
+treatments_model = c(" ~ Variety" ," ~ Variety + (Variety + N + K)^2 + I(N^2) + I(K^2)")
 design(treatments,blocks,treatments_model=treatments_model,searches=10)
-
 
 }
 \references{

@@ -371,6 +371,7 @@
       BM=model.matrix(as.formula(~fBF))[,-1,drop=FALSE]
       BM=do.call(rbind,lapply(1:nlevels(MF),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
       BM=BM[,-c((1:nlevels(MF))*nlevels(BF)) ,drop=FALSE]
+      #print(BM[1:5,])
       if ((ncol(cbind(TM,BM))+1) > nrow(TM)) stop( paste("Too many parameters: plots =",nrow(TM)," parameters = ",ncol(cbind(TM,BM)))) 
       nonsing=NonSingular(TF,BF,TM,BM,MF)
       TF=nonsing$TF
@@ -535,6 +536,5 @@
   row.names(Design)=NULL
   row.names(Efficiencies)=NULL
   Treatments=count(Design[,ncol(Design),drop=FALSE])
-
   list(Treatments=Treatments,Blocks_model=Efficiencies,Design=Design,Plan=Plan,seed=seed,searches=searches,jumps=jumps)
 }

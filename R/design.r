@@ -1,7 +1,7 @@
 #' @title General block and treatment designs.
 #'
 #' @description
-#' Constructs general D-optimal designs for feasible linear treatment models with feasible combinations of block 
+#' Constructs general D-optimal designs for any feasible linear treatment model with any feasible combinations of block 
 #' factors.
 #' 
 #' @param treatments a single treatment factor or data frame for the candidate set 
@@ -28,27 +28,34 @@
 #' \code{treatments} is a factor or data frame containing one or more qualitative
 #' or quantitative level treatment factors defining the candidate treatment set. The 
 #' required treatment design is selected from the candidate treatment set without replacement.
-#' If the candidate set is the same size as the required design the full candidate set will be
-#' selected. If the candidate set is larger than the required design size, a subset of the candidate set 
-#' will be selected by optimizing the treatment design D-optimality criterion. If the candidate set is
-#' smaller than the required design size, the candidate set will be replicated until the candidate set
-#' equals or exceeds the required design size.
 #' 
-#' \code{blocks} is a factor or data frame containing one or more qualitative level block factor where the block factors are optimized
-#' by adding block factors sequentially from left to right. If the blocks are fully nested or if the design has crossed blocks with 
-#' negligible interaction effects, each added block factor is optimized by swaps made within the levels of all previously added blocks. 
-#' If, however, a design has crossed blocks with non-negligible and estimable interaction effects,
-#' the algorithm has a weighting parameter w that weights the relative importance of the main factorial block effects versus the
-#' 2-factor block interaction effects. 
+#'  i) If the candidate set is the same size as the required design, the full candidate set will be
+#' selected. 
 #' 
-#' If  w = 1, the block main effects and the block 2-factor interaction effects are given equal importance whereas if w = 0, the additive main
-#' block effects only are optimized. If 0 < w < 1, the 2-factor block interaction effects are weighted relative
-#' to the additive block effects with the importance of the interaction effects assumed to increase as w increases from 0 to 1. The length
-#' of the \code{blocks} object defines the total number of plots in the design. 
+#' ii) If the candidate set is larger than the required design, a subset of the candidate set 
+#' will be selected by optimizing the treatment D-optimality criterion. 
+#' 
+#' iii) If the candidate set is smaller than the required design size, the candidate set will be replicated 
+#' until the candidate set equals or exceeds the required design size.
+#' 
+#' \code{blocks} is a factor or data frame containing one or more qualitative level block factors, added
+#' sequentially. If the blocks are fully nested or if the design has additive crossed blocks,
+#' each added block factor is optimized by swaps made within the levels of all previously added blocks. If,
+#' however, a design has crossed blocks with estimable interaction effects, the relative importance of the main
+#' factorial block effects versus the 2-factor block interaction effects is weighted by a parameter w in the range 0 to 1. 
+#' 
+#' i) If w = 0, the design is a simple additive block effects. 
+#' 
+#' ii) If w = 1, the design is a simple interaction blocks design for the crossed blocks interaction effects
+#' 
+#' iii) If 0 < w < 1, the 2-factor block interaction effects are weighted relative to the additive block effects with
+#' the importance of the interaction effects assumed to increase as w increases from 0 to 1. 
+#' 
+#' The length of the \code{blocks} object defines the total number of plots in the design. 
 #'  
 #' \code{treatments_model} is a character vector containing one or more nested treatments formula where
-#' the treatment factors are optimized for each treatments model formula taken in order with 
-#' all previously optimized treatment factors remaining constant. Sequential model fitting provides improved flexibility
+#' each model formula, taken in order, is optimized with the treatment factors of all previously
+#' optimized model formula remaining constant. Sequential model fitting provides improved flexibility
 #' for fitting factors or variables of different status or importance (see examples below).
 #' 
 #' The treatment design criterion for each treatment model is the generalized variance of the information matrix for that design 
@@ -212,7 +219,6 @@
 #' 
 #' @export
 #' @importFrom stats anova lm model.matrix as.formula setNames 
-#' @importFrom lme4 lmer
 #' @importFrom plyr count
 #' @importFrom plyr match_df
 #' 
@@ -232,12 +238,13 @@
       TMT=crossprod(t(crossprod(t(sTM),V[1:ncol(TM),1:ncol(TM),drop=FALSE])),t(sTM))
       TMB=crossprod(t(crossprod(t(sTM),V[1:ncol(TM),(ncol(TM)+1):ncol(V), drop=FALSE])),t(sBM))
       BMB=crossprod(t(crossprod(t(sBM),V[(ncol(TM)+1):ncol(V),(ncol(TM)+1):ncol(V),drop=FALSE])),t(sBM))
-      TMB=sweep(TMB,1,diag(TMB))
-      TMT=sweep(TMT,1,diag(TMT))
-      BMB=sweep(BMB,1,diag(BMB))
-      dMat=(1+TMB+t(TMB))**2 - (TMT + t(TMT))*(BMB + t(BMB))
+      TT=TMT-diag(TMT)
+      BB=BMB-diag(BMB)
+      TB=TMB-diag(TMB)
+      dMat=(1+TB+t(TB))**2 - (TT + t(TT))*(BB + t(BB))
       return(dMat)
     }
+    
     # ******************************************************************************************************************
     # Maximises the matrix dMat=TB**2-TT*BB to compare and choose the best swap for D-efficiency improvement.
     # Sampling is used initially but later a full search is used to ensure steepest ascent optimization.
@@ -312,6 +319,18 @@
       }
       return(list(TF=TF,TM=TM,fullrank=FALSE))
     }
+    
+    # ************************************************************************************************************************
+    # Orthogonal basis for M
+    # ************************************************************************************************************************
+    orthogM=function(M) {
+      QR = qr(M) # qr transformation
+      if (QR$rank < min(nrow(M),ncol(M)))
+        QR = qr(M[, QR$pivot[1:QR$rank] ,drop=FALSE]) # removes any aliased block effects then finds qr transformation
+      M = qr.Q(QR) # orthogonal basis for M where Q'Q=I
+      M
+    }
+    
     # ************************************************************************************************************************
     # Optimize the  blocks assuming a possible set of Main block constraints Initial completely randomized starting design.
     # If the initial design is rank deficient, random swaps with positive selection are used to to increase design rank
@@ -326,13 +345,6 @@
       A_IntEff=rep(0,length=ncol(BF))
       Int_levs=rep(0,length=ncol(BF))
       Add_levs=rep(0,length=ncol(BF))
-      orthogM=function(M) {
-        QR = qr(M) # qr transformation
-        if (QR$rank < min(nrow(M),ncol(M)))
-          QR = qr(M[, QR$pivot[1:QR$rank] ,drop=FALSE]) # removes any aliased block effects then finds qr transformation
-        M = qr.Q(QR) # orthogonal basis for M where Q'Q=I
-        M
-      }
       for (u in 1:ncol(BF)) {
         BM1 = scale(model.matrix(as.formula(paste("~",addfactors[u])),BF), center = TRUE, scale = FALSE)[,-1,drop=FALSE]
         BM1=orthogM(BM1)
@@ -432,7 +444,7 @@
    # *******************************************************************************************************************
    UpDate=function(V,t,b,v) {
      VTTt=crossprod(V[1:v,1:v,drop=FALSE],t)
-     VBBb=crossprod(V[(1+v):ncol(V),(1+v):ncol(V),drop=FALSE]  ,b)
+     VBBb=crossprod(V[(1+v):ncol(V),(1+v):ncol(V),drop=FALSE],b)
      VTBt=crossprod(V[1:v,(1+v):ncol(V),drop=FALSE],t)
      VTBb=crossprod(V[(1+v):ncol(V),1:v,drop=FALSE],b)
      tMt=as.numeric(crossprod(t,VTTt))
@@ -565,13 +577,13 @@
   #  Tests if all factors are fully nested AND if all nested blocks are of equal size for each level of nesting
   # *******************************************************************************************************************
   equinested=function(BF) {
-    for (i in 1:ncol(BF)) {
+    for (i in 1:(ncol(BF))) { 
       if ( !isTRUE(nlevels(interaction( BF[,c(1:i)],drop=TRUE))==nlevels(BF[,i,drop=TRUE]))) return(FALSE)
-      k=table(BF[,i])
-      if (!all(k==k[1])) return(FALSE)
+      if ( length(unique(table(BF[,i]))) > 1) return(FALSE)
     }
     return(TRUE)
   }
+
   # *********************************************************************************************************************
   #  treatment information
   # *******************************************************************************************************************

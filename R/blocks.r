@@ -115,57 +115,30 @@
    if (is.list(treatments)) treatments=unlist(treatments)
    if (is.list(blocks)) blocks=unlist(blocks)
    if (is.list(replicates)) replicates=unlist(replicates)
- # ***********************************************************************************************
- # Tests for and constructs square lattice designs in top 2 levels of a lattice design.
- #  Further nested levels for levels 3... etc can be nested within the levels of the lattice blocks
- #  Allocates v*v treatments to blocks assuming a lattice design with r complete replicate blocks
- #  and nested blocks of size v. Returns a simple lattice for r=2 or a triple lattice for 
- #  r=3 for any size of v. Returns a lattice for any r < v + 2 if v is prime or any prime power 
- # where primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) and
- #  powers=c(12,7,5,4,3,3,3,3,rep(2,17)). Returns a triple lattice for v=10 and r=4. 
- # ***********************************************************************************************
+ 
+   # ***********************************************************************************************
+   # Tests for and constructs square lattice designs in top 2 levels of a lattice design.
+   #  Further nested levels for levels 3... etc can be nested within the levels of the lattice blocks
+   #  Allocates v*v treatments to blocks assuming a lattice design with r complete replicate blocks
+   #  and nested blocks of size v. Returns a simple lattice for r=2 or a triple lattice for 
+   #  r=3 for any size of v. Returns a lattice for any r < v + 2 if v is prime or any prime power 
+   # where primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) and
+   #  powers=c(12,7,5,4,3,3,3,3,rep(2,17)). Returns a triple lattice for any v <=30 with r=4. 
+   # u is the number of orthogonal squares and N = v*v is the total number of plots 
+   # ***********************************************************************************************
    squarelattice=function(v,u) {
-     PP=isPrimePower(v)
-     p=PP$base
-     q=PP$power
-     primes=c(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97) 
-     powers=c(12,7,5,4,3,3,3,3,rep(2,17))
-     ppLat = ( p%in%primes)
-     if (ppLat) qmax=powers[which(primes == p)] else qmax=0
-     
-     if (ppLat & q>1 & q<=qmax & u>1)   {
-       mols=MOLS(p,q,u)    #  lattice designs for prime powers where q > 1 and r > 3  
-     } else if ( (isPrime(v) & u<v) | u < 2) {
-       # cyclic designs for any prime v with r < v+2 or any v with r<4 
-       mols=sapply(0:u,function(z){ sapply(0:(v-1), function(j){ (rep(0:(v-1))*z +j)%%v}) })
-       mols=data.frame(row=rep(1:v,v),mols+1) 
-     } else if (v==10 & u<3 & u>0) {
-       #  lattice design for v = 10 and r =3 or r= 4 
-       square1=       c(1,    8,    9,    2,    0,    5,    3,    6,    4,     7,
-                        9,    1,    0,    4,    2,    7,    8,    5,    3,     6,
-                        0,    3,    1,    6,    8,    9,    7,    4,    2,     5,
-                        3,    7,    4,    1,    5,    2,    6,    9,    8,     0,
-                        8,    9,    5,    0,    1,    6,    4,    2,    7,     3,
-                        2,    6,    3,    7,    4,    1,    5,    8,    0,     9,
-                        5,    2,    6,    3,    7,    4,    1,    0,    9,     8,
-                        4,    0,    7,    5,    3,    8,    9,    1,    6,     2,
-                        7,    5,    8,    9,    6,    0,    2,    3,    1,     4,
-                        6,    4,    2,    8,    9,    3,    0,    7,    5,     1)
-       square2 =      c(1,    3,    5,    4,    2,    6,    7,    8,    9,     0,
-                        3,    4,    8,    6,    7,    9,    1,    5,    0,     2,
-                        5,    6,    7,    0,    9,    1,    4,    3,    2,     8,
-                        9,    8,    1,    2,    3,    0,    5,    6,    7,     4,
-                        2,    0,    4,    1,    6,    7,    8,    9,    5,     3,
-                        8,    1,    2,    3,    0,    5,    9,    4,    6,     7,
-                        0,    5,    9,    8,    1,    2,    3,    7,    4,     6,
-                        4,    9,    6,    7,    5,    8,    2,    0,    3,     1,
-                        7,    2,    0,    9,    4,    3,    6,    1,    8,     5,
-                        6,    7,    3,    5,    8,    4,    0,    2,    1,     9)
-       
-       mols=data.frame(row=rep(1:v,v),col=rep(1:v,each=v),square1+1)
-       if (u==2) mols=cbind(mols,square2+1)
-     } else return(NULL)
-     
+     mols=NULL
+     pq=isPrimePower(v)
+     if (!is.null(pq) & u>1 ) {
+       mols=MOLS(pq$base,pq$power,u)
+    } else if (u==2) { # 4 replicate Lattices 
+       mols=GraecoLatin(v)
+    } else if (u < 2) { # simple Lattices (Latin squares for non-prime v)
+       z=0:(v-1)
+       s1=sapply(1:v,function(i) {(z+i-1)%%v + 1})
+       mols=data.frame(Row=rep(1:v,each=v),Col=rep(1:v,v),T1=as.numeric(s1))
+    }
+     if (!is.data.frame(mols)) return(NULL) 
      TF=factor(sapply(1:(u+2),function(i){seq_len(v*v)[order(as.numeric(mols[[i]]))]}))
      TF=data.frame(Reps=rep(sample(1:(u+2)),each=(v*v)),Blocks=rep(sample(1:(v*(u+2))),each=v),plots=sample(1:(v*v*(u+2))),TF)
      TF=TF[ do.call(order, TF), ]
@@ -174,25 +147,25 @@
      return(TF[,4,drop=FALSE])
    }
    # **************************************************************************************************
-  # Tests for and constructs rectangularlattice designsin top 2 levels of a rectangular lattice.
-  # Further nested levels for levels 3... etc can be nested within the levels of the rectangular lattice blocks
-  # ***************************************************************************************************
+   # Tests for and constructs rectangularlattice designsin top 2 levels of a rectangular lattice.
+   # Further nested levels for levels 3... etc can be nested within the levels of the rectangular lattice blocks
+   # ***************************************************************************************************
    rectlattice=function(v,r) {
-    LT=squarelattice(v,r-1)
-    if (is.null(LT)) return(NULL)
-    
-    LT=split(LT[,1], factor(rep(1:((r+1)*v), each=v))) 
-    drop=factor((v*(v-1)+1) : (v*v))
-    dropblock=which(sapply (1:length(LT), function(i) all(drop%in%LT[[i]]))   )
-    droprep=(dropblock-1)%/%v + 1
-    omitblocks=((droprep-1)*v + 1):(droprep*v)
-    LT[omitblocks]=NULL
-    LT=unlist(LT)
-    TF=data.frame(droplevels(LT[!LT%in%drop]))
-    names(TF)[1] = "treatments"
-    rownames(TF)=NULL
-    return(TF)
+     LT=squarelattice(v,r-1)
+     if (is.null(LT)) return(NULL)
+     LT=split(LT[,1], factor(rep(1:((r+1)*v), each=v))) 
+     drop=factor((v*(v-1)+1) : (v*v))
+     dropblock=which(sapply (1:length(LT), function(i) all(drop%in%LT[[i]]))   )
+     droprep=(dropblock-1)%/%v + 1
+     omitblocks=((droprep-1)*v + 1):(droprep*v)
+     LT[omitblocks]=NULL
+     LT=unlist(LT)
+     TF=data.frame(droplevels(LT[!LT%in%drop]))
+     names(TF)[1] = "treatments"
+     rownames(TF)=NULL
+     return(TF)
    }
+   
   # ***************************************************************************************************
   # Maximises the design matrix using the matrix function dMat=TB**2-TT*BB to compare and choose the 
   # best swap for D-efficiency improvement. Sampling is used initially when many feasible swaps are 
@@ -210,9 +183,9 @@
         TB=VTB[TF[s,],fBF[s],drop=FALSE]
         TT=VTT[TF[s,],TF[s,],drop=FALSE]
         BB=VBB[fBF[s],fBF[s],drop=FALSE]
-        TB=sweep(TB,1,diag(TB))
-        TT=sweep(TT,1,diag(TT))
-        BB=sweep(BB,1,diag(BB))
+        TT=TT-diag(TT)
+        BB=BB-diag(BB)
+        TB=TB-diag(TB)
         dMat=(TB+t(TB)+1)**2-(TT+t(TT))*(BB+t(BB))
         sampn=which.max(dMat)
         i=1+(sampn-1)%%nrow(dMat)
@@ -371,7 +344,6 @@
       BM=model.matrix(as.formula(~fBF))[,-1,drop=FALSE]
       BM=do.call(rbind,lapply(1:nlevels(MF),function(i) {scale(BM[MF==levels(MF)[i],], center = TRUE,scale = FALSE)}))
       BM=BM[,-c((1:nlevels(MF))*nlevels(BF)) ,drop=FALSE]
-      #print(BM[1:5,])
       if ((ncol(cbind(TM,BM))+1) > nrow(TM)) stop( paste("Too many parameters: plots =",nrow(TM)," parameters = ",ncol(cbind(TM,BM)))) 
       nonsing=NonSingular(TF,BF,TM,BM,MF)
       TF=nonsing$TF
@@ -499,12 +471,13 @@
     b=prod(blocks[1:2]) else b=blocks # number of blocks
   
   sk=sqrt(ntrts)  # size of blocks of a square lattice 
-  rk=(sqrt(1+4*ntrts)-1)/2 #  size of blocks of a rectangular lattice 
+  rk=(sqrt(1+4*ntrts)-1)/2 #  size of blocks of a rectangular lattice
   
-  Lattice=isTRUE(regBlocks & regReps & identical(sk,floor(sk)) & replicates[1]<(sk+2) & k==sk & 
-             identical(floor(nunits/blocks[1]),nunits/blocks[1]))
-  rectLattice=isTRUE(regBlocks & regReps & identical(rk,floor(rk)) & replicates[1]<(rk+2) & k==rk & 
-                 identical(floor(nunits/blocks[1]),nunits/blocks[1]))
+  ## necessary conditions for lattice designs 
+  Lattice=isTRUE(regBlocks & regReps & sk%%1==0 & replicates[1]<(sk+2) & k==sk & (nunits/blocks[1])%%1==0)
+  ## necessary conditions for rectangular lattice designs 
+  rectLattice=isTRUE(regBlocks & regReps & rk%%1==0 & replicates[1]<(rk+2) & k==rk & (nunits/blocks[1])%%1==0)
+  
   if (Lattice) {
     lsTF=squarelattice(sk,(replicates[1]-2)) 
     if (length(blocks)>2 & !is.null(lsTF))

@@ -46,34 +46,41 @@ optimization.}
 \item{jumps}{Number of random treatment swaps to escape a local maxima.}
 }
 \description{
-Constructs general D-optimal designs for feasible linear treatment models with feasible combinations of block 
+Constructs general D-optimal designs for any feasible linear treatment model with any feasible combinations of block 
 factors.
 }
 \details{
 \code{treatments} is a factor or data frame containing one or more qualitative
 or quantitative level treatment factors defining the candidate treatment set. The 
 required treatment design is selected from the candidate treatment set without replacement.
-If the candidate set is the same size as the required design the full candidate set will be
-selected. If the candidate set is larger than the required design size, a subset of the candidate set 
-will be selected by optimizing the treatment design D-optimality criterion. If the candidate set is
-smaller than the required design size, the candidate set will be replicated until the candidate set
-equals or exceeds the required design size.
 
-\code{blocks} is a factor or data frame containing one or more qualitative level block factor where the block factors are optimized
-by adding block factors sequentially from left to right. If the blocks are fully nested or if the design has crossed blocks with 
-negligible interaction effects, each added block factor is optimized by swaps made within the levels of all previously added blocks. 
-If, however, a design has crossed blocks with non-negligible and estimable interaction effects,
-the algorithm has a weighting parameter w that weights the relative importance of the main factorial block effects versus the
-2-factor block interaction effects. 
+ i) If the candidate set is the same size as the required design, the full candidate set will be
+selected. 
 
-If  w = 1, the block main effects and the block 2-factor interaction effects are given equal importance whereas if w = 0, the additive main
-block effects only are optimized. If 0 < w < 1, the 2-factor block interaction effects are weighted relative
-to the additive block effects with the importance of the interaction effects assumed to increase as w increases from 0 to 1. The length
-of the \code{blocks} object defines the total number of plots in the design. 
+ii) If the candidate set is larger than the required design, a subset of the candidate set 
+will be selected by optimizing the treatment D-optimality criterion. 
+
+iii) If the candidate set is smaller than the required design size, the candidate set will be replicated 
+until the candidate set equals or exceeds the required design size.
+
+\code{blocks} is a factor or data frame containing one or more qualitative level block factors, added
+sequentially. If the blocks are fully nested or if the design has additive crossed blocks,
+each added block factor is optimized by swaps made within the levels of all previously added blocks. If,
+however, a design has crossed blocks with estimable interaction effects, the relative importance of the main
+factorial block effects versus the 2-factor block interaction effects is weighted by a parameter w in the range 0 to 1. 
+
+i) If w = 0, the design is a simple additive block effects. 
+
+ii) If w = 1, the design is a simple interaction blocks design for the crossed blocks interaction effects
+
+iii) If 0 < w < 1, the 2-factor block interaction effects are weighted relative to the additive block effects with
+the importance of the interaction effects assumed to increase as w increases from 0 to 1. 
+
+The length of the \code{blocks} object defines the total number of plots in the design. 
  
 \code{treatments_model} is a character vector containing one or more nested treatments formula where
-the treatment factors are optimized for each treatments model formula taken in order with 
-all previously optimized treatment factors remaining constant. Sequential model fitting provides improved flexibility
+each model formula, taken in order, is optimized with the treatment factors of all previously
+optimized model formula remaining constant. Sequential model fitting provides improved flexibility
 for fitting factors or variables of different status or importance (see examples below).
 
 The treatment design criterion for each treatment model is the generalized variance of the information matrix for that design 

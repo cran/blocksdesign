@@ -27,8 +27,8 @@
     if (abs( newbase - round(newbase)) < .Machine$double.eps^0.75 ) {
       power=newpower
       base=newbase
-    }
+    } 
  } 
-  if (isPrime(base)) return(list(base=base,power=power))
-  else return(list(base=0,power=0))
+  if (isPrime(base)) return(list(base=base,power=power)) else 
+    return(NULL)
 }

@@ -22,6 +22,8 @@ s**i = N. Then, if s is a prime, the number N is a prime power with p = s and q 
 }
 \examples{
 
-isPrimePower(10000)
+isPrimePower(N=13**5)
+isPrimePower(N=25**5) ## 25 is prime-power 
+isPrimePower(N=20**5) ## 20 is not prime-power
  
 }

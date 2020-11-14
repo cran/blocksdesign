@@ -47,8 +47,6 @@ X=GraecoLatin(9)
 table(X[,3],X[,4])
 X=GraecoLatin(32)
 table(X[,3],X[,4])
-X=GraecoLatin(97)
-table(X[,3],X[,4])
  
 }
 \references{

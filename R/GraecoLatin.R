@@ -44,8 +44,6 @@
 #' table(X[,3],X[,4])
 #' X=GraecoLatin(32)
 #' table(X[,3],X[,4])
-#' X=GraecoLatin(97)
-#' table(X[,3],X[,4])
 #'  
 #' @export
 GraecoLatin=function(N) {
@@ -117,7 +115,7 @@ GraecoLatin=function(N) {
   }
   ##  Any prime or prime-power N
   X=isPrimePower(N)
-  if (!is.null(X)) { 
+  if (!isFALSE(X)) { 
     mols=MOLS(X$base,X$power,2) 
     return(mols)
   }

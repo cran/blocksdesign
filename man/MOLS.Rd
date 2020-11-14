@@ -49,7 +49,6 @@ non-prime power design sizes v**2 including
 all odd values of v and any even valued v <= 30 except for 6 or 2.
 }
 \examples{
-MOLS(2,3,1) # Single Latin square of size 8 x 8
 MOLS(2,3,7) # Seven MOLS of size 8 x 8
 MOLS(3,2,4) # Four MOLS of size 9 x 9
 \donttest{MOLS(3,3,4)} # Four MOLS of size 27 x 27
@@ -58,7 +57,7 @@ MOLS(3,2,4) # Four MOLS of size 9 x 9
 }
 \references{
 Hansen, T. & Mullen, G. L. (1992) Primitive polynomials over finite fields,
-Mathematics of Computation, 59, 639-643 and Supplement. https://www.jstor.org/stable/2153093?seq=1 
+Mathematics of Computation, 59, 639-643 and Supplement.
 
 Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experiments,
 Dover Publications, Inc. Section 1.3

@@ -36,7 +36,7 @@
 #' 
 #' @references
 #' Hansen, T. & Mullen, G. L. (1992) Primitive polynomials over finite fields,
-#' Mathematics of Computation, 59, 639-643 and Supplement. https://www.jstor.org/stable/2153093?seq=1 
+#' Mathematics of Computation, 59, 639-643 and Supplement.
 #' 
 #' Raghavarao D. (1971) Constructions and Combinatorial Problems in Design of Experiments,
 #' Dover Publications, Inc. Section 1.3
@@ -51,7 +51,6 @@
 #' Data frame of factor levels for rows, columns and treatment sets
 #'  
 #' @examples
-#' MOLS(2,3,1) # Single Latin square of size 8 x 8
 #' MOLS(2,3,7) # Seven MOLS of size 8 x 8
 #' MOLS(3,2,4) # Four MOLS of size 9 x 9
 #' \donttest{MOLS(3,3,4)} # Four MOLS of size 27 x 27
@@ -66,10 +65,15 @@
    
     #MOLS
   Z=isPrimePower(p)
-  if (!isPrime(p) & !is.null(Z))  
+  
+  ## tests if p is a prime-power such that N = p**(i*q) for i>1
+  if (!isPrime(p) & !isFALSE(Z)) # (!isFALSE(Z)) is TRUE if p = is a prime power  
     return(paste("The parameters (",p,",",q,",",r,") are not valid. Did you mean (",Z$base,",",q*Z$power,",",r,") ?" ))
-  if (is.null(Z))  
+  
+  ## tests if p is a prime given that p is NOT a prime-power 
+  if (isFALSE(Z)) ## not a prime and not a prime-power
     return(paste("p must be a prime if r>1" ))
+
   if ( r>(p**q-1) ) return(paste("The maximum number of orthogonal squares for MOLS of size", p**q,"is", p**q-1))
   if (p > 97 & q>1) return(("Not a valid size - if p is a prime  > 97 then q must equal 1"))  
 

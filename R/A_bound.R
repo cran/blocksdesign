@@ -4,10 +4,10 @@
 #' Finds upper A-efficiency bounds for regular block designs.
 #' 
 #' @details
-#' Upper bounds for the A-efficiency factors of regular block designs 
-#' (see Chapter 2.8 of John and Williams 1995). Non-trivial A-efficiency upper bounds
-#' are calculated for regular block designs with equal block sizes 
-#' and equal replication. All other designs return NA.    
+#' Upper bounds for the A-efficiency factors of regular block designs with equi-replicate
+#' treatments and equal block sizes (see Chapter 2.8 of John and Williams 1995). 
+#' Non-trivial A-efficiency upper bounds are calculated for regular block designs with equal block sizes 
+#' and equal replication only. All other designs return NA.    
 #' 
 #' @param n the total number of plots in the design.
 #' 

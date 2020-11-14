@@ -16,12 +16,15 @@
 #'  
 #' @examples
 #' 
-#' isPrimePower(10000)
+#' isPrimePower(N=13**5)
+#' isPrimePower(N=25**5) ## 25 is prime-power 
+#' isPrimePower(N=20**5) ## 20 is not prime-power
 #'  
 #' @export
 #' 
  isPrimePower=function(N) {
    if (N<1) return(list(base=0,power=0))
+   
   for (newpower in 1:floor(log2(N))) {
     newbase = N**(1/newpower)
     if (abs( newbase - round(newbase)) < .Machine$double.eps^0.75 ) {
@@ -30,5 +33,5 @@
     } 
  } 
   if (isPrime(base)) return(list(base=base,power=power)) else 
-    return(NULL)
+    return(FALSE)
 }

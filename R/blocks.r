@@ -2,54 +2,43 @@
 #'
 #' @description
 #'
-#' Constructs randomized multiply nested block designs for unstructured treatment sets.
+#' Constructs randomized multi-level nested block designs for unstructured treatment sets.
 #'
 #' @details
 #'
-#' Constructs randomized nested block designs for any arbitrary
+#' Constructs randomized multi-level nested block designs for any arbitrary
 #' number of unstructured treatments and any arbitrary feasible depth of nesting.
 #' 
-#' \code{treatments} is a set of numbers that partitions the total number of treatments into
-#' equi-replicate treatment sets.
+#' \code{treatments} is a partition of the number of treatments into equi-replicate treatment sets.
 #' 
-#' \code{replicates} is a set of treatment replication numbers that defines the replication number for each equi-replicate
-#' treatment set.
+#' \code{replicates} is a set of replication numbers for the equi-replicate treatment sets.
 #' 
-#' \code{blocks} defines the levels of a sequence of nested blocks in decreasing order of block size.
-#' Each level defines the number of blocks nested within the blocks of the preceding level
-#' where the top-level block is assumed to be single super-block containing the full set of plots. 
+#' \code{blocks} are the nested blocks levels in decreasing order of block size where
+#' each level defines the number of blocks nested within the blocks of the preceding level.
+#' The top-level block is assumed to be single super-block containing a full set of plots. 
 #' The algorithm finds block sizes automatically for each level of nesting and the block sizes within
-#' any one level of nesting will never differ in size by more than a single plot.
+#' each level of nesting will never differ by more than a single plot.
 #'
 #' Unreplicated treatments are allowed and any simple nested block design can be augmented by any number 
 #' of unreplicated treatments using the \code{treatments} and \code{replicates} formula. 
-#' Usually, however, it will be preferable to find an efficient blocked design
-#' for the replicated treatment sets and then to add unreplicated treatments individually, by hand. 
+#' However, it may be preferable to find an efficient blocked design
+#' for the replicated treatment sets and then to add the unreplicated treatments heuristically. 
 #'
-#' Incomplete block designs are constructed algorithmically except for certain designs for r replicates
-#' of \code{v x v} treatments or r-1 replicates of \code{v x (v-1)} treatments in blocks of size v.
-#' Provided that a set of r-1 mutually orthogonal Latin squares of size \code{v x v} exists, these designs
-#' are constructed algebraically and are guaranteed to achieve optimality. See 
-#' \code{\link[blocksdesign]{squarelattice}} and \code{\link[blocksdesign]{rectlattice}} for information about
-#' which design sizes are constructed algebraically.
+#' The \code{blocks} function constructs all block designs algorithmically except for certain special block designs
+#' for r replicates of \code{v x v} treatments or r-1 replicates of \code{v x (v-1)} treatments in blocks of size v.
+#' Provided that a set of r-1 mutually orthogonal Latin squares of size \code{v x v} exists, these designs are
+#' constructed algebraically and are guaranteed to achieve optimality. See \code{\link[blocksdesign]{squarelattice}} 
+#' and \code{\link[blocksdesign]{rectlattice}} for information about which design sizes are constructed algebraically.
 #'
-#' Outputs:
-#'
-#' \itemize{
-#' \item  A data frame allocating treatments to blocks with successive nested strata in standard block order.\cr
-#' \item  A table showing the replication number of each treatment in the design. \cr
-#' \item  A table showing block levels and the achieved D-efficiency and A-efficiency factor for each nested level
-#'    together with A-efficiency upper bounds, where available. \cr
-#' \item  A plan showing the allocation of treatments to blocks in the bottom level of the design.\cr
-#' }
-#' @param treatments  the required number of treatments partitioned into equally replicated treatment sets.
-#' @param replicates  the replication number for each partitioned treatment set.
+#' 
+#' @param treatments  the total required number of treatments partitioned into equally replicated treatment sets.
+#' @param replicates  the replication numbers of the equally replicated treatment sets.
 #' @param blocks the number of nested blocks in each level of nesting from the top level down.
 #' @param seed an integer initializing the random number generator.
 #' @param searches the maximum number of local optima searched for a design optimization. 
 #' @param jumps  the number of pairwise random treatment swaps used to escape a local maxima.
 #' @return
-#' \item{Treatments}{A table showing the replication number of each treatment in the design.}
+#' \item{Replication}{A table showing the replication number of each treatment in the design.}
 #' \item{Design}{Data frame giving the optimized block and treatment design in plot order.}
 #' \item{Plan}{Data frame showing a plan view of the treatment design in the bottom level of the design.}
 #' \item{Blocks_model}{The D-efficiencies and the A-efficiencies of the blocks in each nested level of the 
@@ -89,7 +78,7 @@
 #' 
 #' # 64 treatments x 4 replicates with 4 main blocks, 8 nested sub-blocks of size 8
 #' # (lattice), 16 nested sub-sub blocks of size 4 and 32 nested sub-sub-sub blocks of size 2
-#' \donttest{blocks(64,4,list(4,8,2,2))}
+#'  \donttest{blocks(64,4,list(4,8,2,2))}
 #' 
 #' # 100 treatments x 4 replicates with 4 main blocks nested blocks of size 10 (lattice square)
 #' blocks(100,4,list(4,10)) 
@@ -98,12 +87,31 @@
 #' @importFrom stats coef anova lm model.matrix as.formula setNames 
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
-   options(contrasts=c('contr.treatment','contr.poly'))
-   options(warn=0)
-   tol = .Machine$double.eps ^ 0.5
-   if (is.list(treatments)) treatments=unlist(treatments)
-   if (is.list(blocks)) blocks=unlist(blocks)
-   if (is.list(replicates)) replicates=unlist(replicates)
+   
+  # ***********************************************************************************************
+  #  finds a set of equal or near-equal sub-blocks nested within a set of main blocks
+  # each sub-set must contain the same number b of sub-blocks 
+  # sub-blocks which will never differ by more than a single plot in size
+  # *********************************************************************************************** 
+   nestedSizes=function(blocks,b) {
+     subB=function(k) c(rep((floor(k/b)+1),(k-b*floor(k/b))),rep(floor(k/b),(b+b*floor(k/b)-k)))
+     k1=min(blocks)
+     k2=max(blocks)
+     sub1=subB(k1)
+     sub2=subB(k2)
+     subM=matrix(nrow=b,ncol=length(blocks))
+     subM[,blocks==k1]=sub1
+     subM[,blocks==k2]=sub2
+     subB=as.vector(subM)
+     return(subB)
+   }
+  # ***********************************************************************************************  
+  options(contrasts=c('contr.treatment','contr.poly'))
+  options(warn=0)
+  tol = .Machine$double.eps ^ 0.5
+  if (is.list(treatments)) treatments=unlist(treatments)
+  if (is.list(blocks)) blocks=unlist(blocks)
+  if (is.list(replicates)) replicates=unlist(replicates)
   if (missing(treatments)|is.null(treatments)) stop(" Treatments missing or not defined ")
   if (missing(replicates)|is.null(replicates)) stop(" Replicates missing or not defined ")
   if (!is.null(seed)) set.seed(seed)
@@ -113,38 +121,32 @@
   if (anyNA(treatments)|any(is.nan(treatments))|any(!is.finite(treatments))|any(treatments<1)) 
     stop(" treatments parameter invalid")
   if (length(replicates)!=length(treatments)) 
-    stop("treatments and replicates parameters must both be the same length")
-  hcf=HCF(replicates) 
+    stop("the treatments parameter and the replicates parameter must be of equal length so
+    that each treatment set has a matching replication number")
   if (is.null(blocks)) blocks=1
   if (anyNA(blocks)|any(is.nan(blocks))|any(!is.finite(blocks))|any(blocks%%1!=0)|any(blocks<1)) 
     stop(" blocks invalid")
   blocks=blocks[blocks!=1]
-  if(length(blocks)==0) blocks=1
-  ntrts=sum(treatments)
-  TF=unlist(lapply(1:hcf,function(i){sample(rep(factor(1:ntrts), rep(replicates/hcf,treatments)))}))
-  if (is.null(searches)) searches=1+5000%/%length(TF)
+  if (length(blocks)==0) blocks=1
+  nplots=sum(treatments*replicates)
+  if (is.null(searches)) searches=1+5000%/%nplots
   if( !is.finite(searches) | is.nan(searches) | searches<1 | searches%%1!=0 ) stop(" searches parameter is invalid")
   if (is.null(names(blocks))) 
-    names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j-1)}))
-  if (prod(blocks)*2>length(TF)) stop("Too many blocks for the available plots  - blocks must contain at least two plots")
-  if (  (sum(treatments)+prod(blocks))>length(TF)) stop("Too many parameters for the available plots")
+    names(blocks)=unlist(lapply(1:length(blocks), function(j) {paste0("Level_",j)}))
+  if (prod(blocks)*2 > nplots ) stop("Too many blocks for the available plots  - blocks must contain at least two plots")
+  if ((sum(treatments)+prod(blocks)-1) > nplots) stop("Too many parameters for the available plots")
   # Finds nested block sizes where all block sizes are as equal as possible within each level of nesting
-  blocksizes=length(TF)
+  blocksizes=nplots
   for (i in 1:length(blocks))
-    blocksizes=unlist(lapply(1:length(blocksizes), function(j) {
-      nestblocksizes=rep(blocksizes[j]%/%blocks[i],blocks[i])
-      blocksizes=nestblocksizes+rep(c(1,0),c(blocksizes[j]-sum(nestblocksizes), blocks[i]-blocksizes[j]+sum(nestblocksizes)))
-    }))
+    blocksizes=nestedSizes(blocksizes,blocks[i])
   blocksGrid=function(blocks){expand.grid(lapply(length(blocks):1,function(i) {
-    factor(seq(blocks[i]),labels=lapply(1:blocks[i], function(j){paste0("Blocks_",j)}))}))[length(blocks):1]}
-  blkdesign=blocksGrid(blocks)
-  # the Null column is needed for 'restriction' of the first (main) set of blocks 
-  blkdesign=cbind("Null"=factor(rep("Blocks_1",nrow(blkdesign))),blkdesign)
-  blkDesign=blkdesign[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
+    factor(seq(blocks[i]),labels=lapply(1:blocks[i], function(j){paste0("B",j)}))}))[length(blocks):1]}
+  blkDesign=blocksGrid(blocks)[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
   blkDesign=data.frame(lapply(1:ncol(blkDesign),function(i) { droplevels(interaction(blkDesign[,1:i], lex.order = TRUE))}))
-  colnames(blkDesign)=c("Null",labels(blocks))
-  Z=buildblocks(TF,blkDesign,searches,seed,jumps)
-  
-  list(Treatments=Z$Treatments,Blocks_model=Z$Blocks_model,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
+  colnames(blkDesign)=labels(blocks)
+  hcf=HCF(replicates) 
+  TF=data.frame(Treatments=factor(unlist(lapply(1:hcf,function(i){sample(rep(1:sum(treatments),rep(replicates/hcf,treatments)))}))))
+  Z=nestedBlocks(TF[,1],blkDesign,searches,seed,jumps)
+  list(Replication=data.frame(table(Treatments=TF)),Blocks_model=Z$Blocks_model,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
  }
  

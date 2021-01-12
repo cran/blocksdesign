@@ -15,11 +15,11 @@ design(
 )
 }
 \arguments{
-\item{treatments}{a single treatment factor or data frame for the candidate set 
-of treatment factor combinations assuming any combination of qualitative or quantitative factor levels.}
+\item{treatments}{a single treatment factor or data frame for the candidate set of treatment factor
+combinations assuming any combination of qualitative or quantitative factor levels.}
 
-\item{blocks}{a single block factor or data frame for the required combinations of 
-block factors in the required order of fitting assuming quantitative block factor levels only.}
+\item{blocks}{a single block factor or data frame for the required combinations of block factors in
+the required order of fitting assuming quantitative block factor levels only.}
 
 \item{treatments_model}{a character vector containing one or more nested treatment model formula.}
 
@@ -34,66 +34,64 @@ optimization.}
 \item{jumps}{the number of pairwise random treatment swaps used to escape a local maxima.}
 }
 \value{
-\item{Treatments}{The treatments included in the design and the replication of each individual 
+\item{Replication}{The treatments included in the design and the replication of each individual 
  treatment taken in de-randomized standard order.}
-\item{Design}{The design layout showing the randomized allocation of treatments to blocks and plots.}
+\item{Design}{The design layout showing the randomized allocation of treatments to blocks and plots
+in standardized block order.}
 \item{Treatments_model}{The fitted treatment model, the number of model parameters (DF)
-  and the D-efficiency of each sequentially fitted treatment model}
-\item{Blocks_model}{The blocks sub-model design and 
- the D- and A-efficiency factors of each successively fitted sub-blocks model.}
+  and the D-efficiency of each sequentially fitted treatment model.}
+\item{Blocks_model}{The blocks sub-model design and the D- and A-efficiency factors of each successively
+ fitted sub-blocks model.}
 \item{seed}{Numerical seed for random number generator.}
 \item{searches}{Maximum number of searches in each stratum.}
 \item{jumps}{Number of random treatment swaps to escape a local maxima.}
 }
 \description{
-Constructs general D-optimal designs for any feasible linear treatment model with any feasible 
-combination of block factors.
+Constructs general D-optimal block and treatment designs for any feasible linear treatment model and
+any feasible combination of block factors.
 }
 \details{
-\code{treatments} is a factor or data frame containing one or more qualitative
-or quantitative level treatment factors defining the set of candidate treatments. The 
-required treatment design is selected from the candidate treatments without replacement
-by the following steps:
+\code{treatments} a factor or data frame containing one or more qualitative or quantitative
+level treatment factors defining a candidate set of treatments. The required treatment design 
+is selected from the candidate treatment set without replacement by the following steps:
 
 i) If the candidate set is smaller than the required design size, the full candidate set is replicated 
 until it equals or exceeds the required design size.
 
 ii) If the candidate set is the same size as the required design, the full candidate set is selected. 
 
-ii) If the candidate set is larger than the required design, a subset of the required size is
-selected that optimizes the treatment D-optimality criterion. 
+ii) If the candidate set is larger than the required design, a subset of the required size is selected 
+without replacement by optimizing the treatment D-optimality criterion. 
 
-\code{treatments_model} is a character vector containing one or more treatments model formula. The 
-treatments model is optimized sequentially for each model formula in turn with the treatments
-of any previously fitted model formula held constant. Sequential treatment model fitting provides
-improved flexibility for fitting treatment factors or variables of different status or importance 
-(see examples below).
+\code{treatments_model} a character vector containing one or more treatments model formulae. The 
+treatment models are optimized sequentially for each model formula in turn assuming the treatments for
+any previously fitted models are held constant. Sequential model fitting provides improved flexibility 
+for fitting treatment factors or variables of different status or importance (see examples below).
 
 The design criterion for each treatment model is maximization of the determinant of the information 
-matrix for that treatment model conditional on the the information matrices of any
-previously fitted treatment models remaining constant.
+matrix of that treatment model conditional on the the information matrices of all previously 
+fitted treatment models.
 
-The treatment design efficiency is the ratio of the generalized variance of the full candidate 
-treatment model relative to the generalized variance of the optimized design. The efficiency will be less 
-than or equal to 1 for factorial models but may exceed 1 for polynomial models. 
+The D-optimal treatment design efficiency is the ratio of the generalized variance of the full 
+candidate treatment model relative to the generalized variance of the optimized design. The efficiency
+will be less than or equal to 1 for factorial models but may exceed 1 for polynomial models. 
 
-\code{blocks} is a factor or data frame containing one or more qualitative level block factors taken in
+\code{blocks} a factor or data frame containing one or more qualitative level block factors in
 order of fitting. If blocks are nested or crossed and fully additive, designs are optimized 
-by making improving swaps between the blocks of each added factor, taken in order of fitting,
-with all previously optimized factors held constant. If, however, blocks are crossed factors with
-non-negligible interactions, the \code{blocksdesign} algorithm first partitions 
-the block design information matrix into orthogonal components and then down-weights
-the block interaction components by a coefficient 0 < w < 1. The determinant of the
-weighted information matrix is then optimized in the usual way.
+by making improving swaps between the blocks of each added factor, taken in order, with the 
+blocks of all previously added block factors held constant. 
 
-This process ensures that factorial main effects are given more importance
-than interaction effects in the optimization of a crossed blocks design. 
-The design outputs include a table of efficiency factors for first and second-order 
-factorial block effects and comparison of the efficiency factors for different choices of w can 
-be used to find a good compromise design for fitting both main block
-and interaction block effects.
- 
-The length of the \code{blocks} object defines the total number of plots in the design. 
+If crossed blocks are assumed to interact, the \code{blocksdesign} algorithm first partitions 
+the block design information matrix into factorial components and then down-weights the
+block interaction components by a coefficient 0 < w < 1. The determinant of the weighted
+information matrix is then optimized in the usual way. This process ensures that factorial main effects
+are given more importance than interaction effects in the optimization of a crossed blocks design. 
+
+The length of the \code{blocks} object defines the total number of plots in the design.
+
+The design outputs include a table of efficiency factors for first and second-order factorial block 
+effects and comparison of the efficiency factors for different choices of w can be used to find a 
+good compromise design for fitting both main block and interaction block effects.
 
 For more details see \code{vignette(package = "blocksdesign")}
 }
@@ -101,127 +99,170 @@ For more details see \code{vignette(package = "blocksdesign")}
 ## For best results, the number of searches may need to be increased.
 
 ## 4 replicates of 12 treatments with 16 nested blocks of size 3
-## rectangular lattice see Plan 10.10 Cochran and Cox 1957.
+## giving a rectangular lattice: see Plan 10.10 Cochran and Cox 1957.
 blocks = data.frame(Main = gl(4,12), Sub = gl(16,3))
-design(treatments = gl(12,1,48), blocks)
+Z=design(treatments = gl(12,1,48), blocks)
+print(Z)
 
 ## 3 replicates of 15 treatments in 3 main blocks with two sets of
 ## nested blocks and one control treatment
-\donttest{blocks=data.frame( Main = gl(3,18,54),Sub1 = gl(9,6,54),Sub2 = gl(27,2,54))
-treatments=factor(rep(c(1:15,rep("control",3)),3),levels = c(1:15,"control"))
+\donttest{
+blocks=data.frame( Main = gl(3,18,54),Sub1 = gl(9,6,54),Sub2 = gl(27,2,54))
+treatments=factor(rep(c(1:15,rep("control",3)),3))
 Z=design(treatments,blocks)
+print(Z)
 incid1=table(interaction(Z$Design$Main,Z$Design$Sub1,lex.order = TRUE),Z$Design$treatments)
 crossprod(incid1) # print pairwise concurrences within Sub1 blocks
 incid2=table(interaction(Z$Design$Main,Z$Design$Sub2,lex.order = TRUE),Z$Design$treatments)
-crossprod(incid2) # print pairwise concurrences within Sub2 blocks}
+crossprod(incid2) # print pairwise concurrences within Sub2 blocks
+}
  
 ## 4 x 12 design for 4 replicates of 12 treatments with 3 plots in each intersection block
 ## The optimal design is Trojan with known A-efficiency = 22/31 for the intersection blocks
 blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48))
 Z=design(treatments =gl(12,1,48),blocks)
+print(Z)
 incid=table(interaction(Z$Design$Rows,Z$Design$Cols,lex.order = TRUE),Z$Design$treatments)
-Z # print design
-incid # print incidences of treatments in blocks
 crossprod(incid) # print pairwise concurrences within blocks
+
 ## as above but showing 3 sub-columns nested within each main column
+\donttest{
 blocks = data.frame(Rows = gl(4,12), Cols = gl(4,3,48), subCols = gl(12,1,48))
-\donttest{Z=design(treatments = gl(12,1,48),blocks,searches=200)
-Z # print design}
+Z=design(treatments = gl(12,1,48),blocks,searches=200)
+print(Z)
+}
 
 ## 4 x 13 Row-and-column design for 4 replicates of 13 treatments 
 ## Youden design Plan 13.5 Cochran and Cox (1957).
+\donttest{
 blocks = data.frame(Rows = gl(4,13), Cols = gl(13,1,52))
-\donttest{Z=design(treatments = gl(13,1,52),blocks,searches = 700)
+Z=design(treatments = gl(13,1,52),blocks,searches = 700)
+print(Z)
 incid=table(Z$Design$Cols,Z$Design$treatments)
-Z # print design
 crossprod(incid) # print pairwise concurrences of treatments within column blocks (BIB's)
 }
 
 ## 48 treatments in 2 replicate blocks with 2 nested rows in each replicate and 3 main columns
-##  (Reps/Rows) x Cols
 blocks = data.frame(Reps = gl(2,48), Rows = gl(4,24,96), Cols = gl(3,8,96))
-design(treatments=gl(48,1,96),blocks,searches=5)
+Z=design(treatments=gl(48,1,96),blocks,searches=5)
+print(Z)
 
 ## 48 treatments in 2 replicate blocks with 2 main columns
 ## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
 ## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
-\donttest{blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
-design(treatments=gl(48,1,96),blocks,searches=5)
-design(treatments=gl(48,1,96),blocks,searches=5,weighting=.9)}
+\donttest{
+blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
+Z1=design(treatments=gl(48,1,96),blocks,searches=5)
+print(Z1)
+Z2=design(treatments=gl(48,1,96),blocks,searches=5,weighting=.9)
+print(Z2)
+}
 
-## designs with unequal block sizes Gupta & Jones (1983). Check equality of D and A-efficiency
-\donttest{t=factor(c(rep(1:12,each=7)))
+## Equireplicate balanced designs with unequal block sizes. Gupta & Jones (1983). 
+## Check for equality of D and A-efficiency in optimized design
+\donttest{
+t=factor(c(rep(1:12,each=7)))
 b=factor(c(rep(1:12,each=6),rep(13:18,each=2)))
-design(t,b,searches=100)$Blocks_model # max efficiency = 6/7}
-\donttest{t=factor(c(rep(1:14,each=8)))
+Z=design(t,b,searches=100)$Blocks_model # max efficiency = 6/7
+print(Z)
+}
+\donttest{
+t=factor(c(rep(1:14,each=8)))
 b=factor(c(rep(1:14,each=4),rep(15:21,each=8)))
-design(t,b,searches=100)$Blocks_model # max efficiency = 7/8}
-\donttest{t=factor(c(rep(1:16,each=7)))
+Z=design(t,b,searches=500)$Blocks_model # max efficiency = 7/8
+print(Z)
+}
+\donttest{
+t=factor(c(rep(1:16,each=7)))
 b=factor(c(rep(1:16,each=4),rep(17:22,each=8)))
-design(t,b,searches=1000)$Blocks_model # max efficiency = 6/7}
-\donttest{t=factor(c(rep(1:18,each=7)))
+Z=design(t,b,searches=1000)$Blocks_model # max efficiency = 6/7
+print(Z)
+}
+\donttest{
+t=factor(c(rep(1:18,each=7)))
 b=factor(c(rep(1:18,each=6),rep(19:24,each=3)))
-design(t,b,searches=500)$Blocks_model # max efficiency = 6/7}
+Z=design(t,b,searches=500)$Blocks_model # max efficiency = 6/7
+print(Z)
+}
 
 ## Factorial treatment designs defined by a single factorial treatment model
 
 ## Main effects of five 2-level factors in a half-fraction in 2/2/2 nested blocks design 
-## (may require 100's of repeats to find a fully orthogonal solution - a long wait!)
+## (may require 100's of repeats to find a fully orthogonal solution - may be a very long wait!)
+\donttest{
 treatments = expand.grid(F1 = gl(2,1), F2 = gl(2,1),F3 = gl(2,1), F4 = gl(2,1), F5 = gl(2,1))
 blocks = data.frame(b1 = gl(2,8),b2 = gl(4,4),b3 = gl(8,2))
 model=" ~ F1 + F2 + F3 + F4 + F5"
-\donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-if ( isTRUE(all.equal(z$Blocks_model[3,3],1) ) ) break }
-print(z)}
+repeat {Z = design(treatments,blocks,treatments_model=model,searches=50)
+if ( isTRUE(all.equal(Z$Blocks_model[3,3],1) ) ) break }
+print(Z)
+}
  
-# Second-order model for five qualitative 2-level factors in 4 randomized blocks
+# Second-order model for five qualitative 2-level factors in 4 randomized blocks with two
+# nested sub-blocks in each main plot
 treatments = expand.grid(F1 = gl(2,1), F2 = gl(2,1),F3 = gl(2,1), F4 = gl(2,1), F5 = gl(2,1))
-blocks = data.frame(blocks = gl(4,8))
+blocks = data.frame(main = gl(4,8),sub=gl(8,4))
 model = " ~ (F1 + F2 + F3 + F4 + F5)^2"
-design(treatments,blocks,treatments_model=model,searches = 10)
+Z=design(treatments,blocks,treatments_model=model,searches = 10)
+print(Z)
 
-# Main effects of five 2-level factors in a half-fraction of a 4 x 4 row-and column design.
+# Main effects of five 2-level factors in a half-fraction of a 4 x 4 row-and column design
+\donttest{
 treatments = expand.grid(F1 = gl(2,1), F2 = gl(2,1),F3 = gl(2,1), F4 = gl(2,1), F5 = gl(2,1))
 blocks = data.frame(rows = gl(4,4), cols = gl(4,1,16))
 model = "~ F1 + F2 + F3 + F4 + F5"
-\donttest{repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-if ( isTRUE(all.equal(z$Blocks_model[2,3],1) ) ) break }
- print(z)}
+repeat {Z = design(treatments,blocks,treatments_model=model,searches=50)
+if ( isTRUE(all.equal(Z$Blocks_model[2,3],1) ) ) break}
+print(Z)
+}
 
 # Quadratic regression for three 3-level numeric factor assuming a 10/27 fraction
 treatments = expand.grid(A = 1:3, B = 1:3, C = 1:3)
 blocks=data.frame(main=gl(1,10))
 model = " ~ ( A + B + C)^2 + I(A^2) + I(B^2) + I(C^2)"
-design(treatments,blocks,treatments_model=model,searches=10) 
+Z=design(treatments,blocks,treatments_model=model,searches=10) 
+print(Z)
 
 # Quadratic regression for three 3-level numeric factor crossed with a qualitative 2-level factor
+\donttest{
 treatments = expand.grid(F = factor(1:2), A = 1:3, B = 1:3, C = 1:3)
 blocks=data.frame(main=gl(1,18))
 model = " ~ F + A + B + C + F:A + F:B + F:C + A:B + A:C + B:C + I(A^2) + I(B^2) + I(C^2)"
-design(treatments,blocks,treatments_model=model,searches=5) 
+Z=design(treatments,blocks,treatments_model=model,searches=5)
+print(Z)
+}
 
 # 1st-order model for 1/3rd fraction of four qualitative 3-level factors in 3  blocks
+\donttest{
 treatments = expand.grid(F1 = gl(3,1), F2 = gl(3,1), F3 = gl(3,1), F4 = gl(3,1))
 blocks = data.frame(main = gl(3,9))
 model = " ~ F1 + F2 + F3 + F4"
-\donttest{ design(treatments,blocks,treatments_model=model,searches=25)}
+Z = design(treatments,blocks,treatments_model=model,searches=25)
+print(Z)
+}
 
 # 2nd-order model for a 1/3rd fraction of five qualitative 3-level factors in 3 blocks
 # (may require many repeats to find a fully orthogonal solution)
+\donttest{
 treatments = expand.grid(F1 = gl(3,1), F2 = gl(3,1),F3 = gl(3,1), F4 = gl(3,1), F5 = gl(3,1))
 blocks=data.frame(main=gl(3,27))
 model = " ~ (F1 + F2 + F3 + F4 + F5)^2"
-\donttest{ repeat {z = design(treatments,blocks,treatments_model=model,searches=50)
-if ( isTRUE(all.equal(z$Blocks_model[1,3],1) ) ) break}
- print(z) }
+repeat {Z = design(treatments,blocks,treatments_model=model,searches=50)
+if (isTRUE(all.equal(Z$Blocks_model[1,3],1))) break}
+print(Z) 
+}
 
 # 2nd-order model for two qualitative and two quantitative level factors in 2 blocks of size 18
+\donttest{
 treatments = expand.grid(F1 = factor(1:2), F2 = factor(1:3), V1 = 1:3, V2 = 1:4)
 blocks = data.frame(main = gl(2,18))
 model = " ~ (F1 + F2 + V1 + V2)^2 +  I(V1^2) +  I(V2^2)"
-\donttest{design(treatments,blocks,treatments_model=model,searches=5)}
+Z=design(treatments,blocks,treatments_model=model,searches=5)
+print(Z)
+}
  
 # Plackett and Burman design for eleven 2-level factors in 12 runs 
+\donttest{
 GF = expand.grid(F1 = factor(1:2,labels=c("a","b")), F2 = factor(1:2,labels=c("a","b")), 
                  F3 = factor(1:2,labels=c("a","b")), F4 = factor(1:2,labels=c("a","b")),
                  F5 = factor(1:2,labels=c("a","b")), F6 = factor(1:2,labels=c("a","b")),
@@ -230,8 +271,10 @@ GF = expand.grid(F1 = factor(1:2,labels=c("a","b")), F2 = factor(1:2,labels=c("a
                  F11= factor(1:2,labels=c("a","b")) )
 blocks=data.frame(main=gl(1,12))
 model = "~ F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9 + F10 + F11"
-\donttest{D=design(GF,blocks,treatments_model=model,searches=25)
-round(crossprod(scale(data.matrix(D$Design)[,-1])),6) }
+Z=design(GF,blocks,treatments_model=model,searches=25)
+print(Z)
+round(crossprod(scale(data.matrix(Z$Design)[,-1])),6) 
+}
 
 ## Factorial treatment designs defined by sequentially fitted factorial treatment models
 
@@ -241,12 +284,16 @@ round(crossprod(scale(data.matrix(D$Design)[,-1])),6) }
 ## which may be undesirable whereas the two stage model forces an equal split of 6 plots
 ## per variety. The single stage model appears slightly more efficient but
 ## in this example global D-optimality does not give the most suitable design structure. 
+\donttest{
 treatments = expand.grid(Variety = factor(1:4), N = 1:3, K = 1:3)
 blocks=data.frame(main=gl(2,12))
 treatments_model = " ~  (Variety + N + K)^2  + I(N^2) + I(K^2)"
-design(treatments,blocks,treatments_model=treatments_model,searches=10) 
+Z1=design(treatments,blocks,treatments_model=treatments_model,searches=10)
+print(Z1)
 treatments_model = c(" ~ Variety" ," ~ Variety + (Variety + N + K)^2 + I(N^2) + I(K^2)")
-design(treatments,blocks,treatments_model=treatments_model,searches=10)
+Z2=design(treatments,blocks,treatments_model=treatments_model,searches=10)
+print(Z2)
+}
 
 }
 \references{

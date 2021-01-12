@@ -1,33 +1,32 @@
-#' @title buildblocks
+#' @title nestedBlocks
 #' @description
 #' Internal function for optimizing nested block designs for a given set of nested block levels 
-#' \code{blkDesign} and a required set of treatments \code{TF} 
+#' \code{BF} and a required set of treatments \code{TF} 
 #' @param TF is a treatment factor with a treatment factor level for each plot level
-#' @param blkDesign is a data frame with a column for each set of nested blocks and a row for each plot 
+#' @param BF is a data frame with a column for each set of nested blocks and a row for each plot 
 #' @param searches is the number of optimizations searched
 #' @keywords internal
 #' 
-buildblocks=function(TF,blkDesign,searches,seed,jumps) {
-
+nestedBlocks=function(TF,BF,searches,seed,jumps) {
+  options(contrasts=c('contr.treatment','contr.poly'),warn=0)
+  tol = .Machine$double.eps ^ 0.5
+  
   # ***********************************************************************************************
   #  efficiency factors for TF and individual block factors BF
   # *********************************************************************************************** 
   blockEstEffics=function(TF,BF) {
-    if (nlevels(BF)==1) return(c(1,1))
-    TM  = scale(model.matrix(~ TF))[,-1]
-    BMO = scale(model.matrix(~ BF))[,-1]
-    TMO = qr.Q(qr(TM)) # orthogonal basis for TM 
-    BMO = qr.Q(qr(BMO)) # orthogonal basis for BM
-    if (nlevels(TF)<=nlevels(BF)) 
-      E=eigen(diag(ncol(TMO))-tcrossprod(crossprod(TMO,BMO)),symmetric=TRUE,only.values = TRUE)
-    else E=eigen(diag(ncol(BMO))-tcrossprod(crossprod(BMO,TMO)),symmetric=TRUE,only.values = TRUE)
-    Deff=prod(E$values)**(1/ncol(TMO))
-    if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TMO)/sum(1/E$values)
-    else Aeff=ncol(TMO)/(ncol(TMO)-ncol(BMO) + sum(1/E$values) )
+      TM = qr.Q(qr(  scale(model.matrix(~ TF))[,-1]  )) # orthogonal basis for TM 
+      BM = qr.Q(qr(  scale(model.matrix(~ BF))[,-1]  )) # orthogonal basis for BM
+      if (nlevels(TF)<=nlevels(BF)) 
+        E=eigen(diag(ncol(TM))-tcrossprod(crossprod(TM,BM)),symmetric=TRUE,only.values = TRUE) else
+          E=eigen(diag(ncol(BM))-tcrossprod(crossprod(BM,TM)),symmetric=TRUE,only.values = TRUE)
+      Deff=exp(sum(log(E$values))/ncol(TM))
+      if (nlevels(TF)<=nlevels(BF)) Aeff=ncol(TM)/sum(1/E$values) else
+         Aeff=ncol(TM)/(ncol(TM)-ncol(BM) + sum(1/E$values) )
     return(list(Deffic= round(Deff,7), Aeffic=round(Aeff,7)))
   }
   # *******************************************************************************************************************************
-  # Finds efficiency factors for unstructured treatment factor TF and nested block designs blkDesign
+  # Finds efficiency factors for unstructured treatment factor TF and nested block designs BF
   # *******************************************************************************************************************************
   BlockEfficiencies=function(Design){
     TF=Design[,ncol(Design)]
@@ -36,10 +35,14 @@ buildblocks=function(TF,blkDesign,searches,seed,jumps) {
     sizes = lapply(1:(ncol(Design)-2),function(i) {table(Design[,i])}) 
     regBlocks=sapply(1:length(sizes),function(i) {max(sizes[[i]])==min(sizes[[i]])})
     bounds=sapply(1:(ncol(Design)-2),function(i) {
-      if (regBlocks[i] & regReps) A_bound(length(TF),nlevels(TF),nlevels(Design[,i])) else NA}) 
+      if (regBlocks[i] & regReps) A_bound(length(TF),nlevels(TF),nlevels(Design[,i])) else 1}) 
     
     blocklevs=unlist(lapply(1:(ncol(Design)-2), function(j) {nlevels(Design[,j])}))
-    Effics  = t(sapply(1:(ncol(Design)-2),function(i) {blockEstEffics(TF,Design[,i])}) )
+    Effics  = t(sapply(1:(ncol(Design)-2),function(i) {
+     if (nlevels(Design[,i])>1)
+      blockEstEffics(TF,Design[,i]) else
+        list(Deffic= 1, Aeffic=1)
+      }) )
     efficiencies=data.frame(1:(ncol(Design)-2),blocklevs,as.numeric(Effics[,1]),as.numeric(Effics[,2]),round(bounds,7))
     colnames(efficiencies)=c("Level","Blocks","D-Efficiency","A-Efficiency", "A-Bound")
     return(efficiencies)
@@ -133,7 +136,9 @@ buildblocks=function(TF,blkDesign,searches,seed,jumps) {
           globTF=TF 
           globrelD=relD
           if (!is.na(blocksEffBound)) {
-            reff=blockEstEffics(globTF,BF)[2]
+            if (nlevels(BF)>1)
+              reff=blockEstEffics(globTF,BF)[2] else
+                reff=1
             if (isTRUE(all.equal(blocksEffBound,reff))) return(globTF)
           }  
         }
@@ -200,7 +205,7 @@ buildblocks=function(TF,blkDesign,searches,seed,jumps) {
         pivot=Q$pivot
       } else TM[c(swap[1],swap[2]),]=TM[c(swap[2],swap[1]),]
     }
-    return(list(TF=TF,TM=NULL))
+    stop("Unable to find a non-singular solution for this design - try a simpler design")
   }
   # *****************************************************************************************************************
   # Optimizes the nested Blocks assuming a possible set of Main block constraints and assuming a randomized starting design.
@@ -224,7 +229,6 @@ buildblocks=function(TF,blkDesign,searches,seed,jumps) {
     nonsing=NonSingular(TF,BF,TM,BM,MF)
     TF=nonsing$TF
     TM=nonsing$TM
-    if (is.null(TM)) return(list(TF=TF,TM=TM))
     V = chol2inv(chol(crossprod(cbind(TM,BM))))
     VTT = matrix(0, nrow=nlevels(TF), ncol=nlevels(TF))
     VBB = matrix(0, nrow=nlevels(BF), ncol=nlevels(BF))
@@ -233,70 +237,52 @@ buildblocks=function(TF,blkDesign,searches,seed,jumps) {
     VBB[include,include]             = V[nlevels(TF):ncol(V),nlevels(TF):ncol(V),drop=FALSE]
     VTB[2:nlevels(TF),include]       = V[1:(nlevels(TF)-1), nlevels(TF):ncol(V), drop=FALSE]
     TF=Optimise(TF,MF,BF,VTT,VBB,VTB,TM,BM,regReps)
-    return(list(TF=TF,TM=TM))
+    return(TF)
   }
- 
+  
   # *****************************************************************************************************************
-  # buildblocks 
+  # nestedBlocks - valid for nested block designs ONLY
   # *****************************************************************************************************************
-  options(contrasts=c('contr.treatment','contr.poly'))
-  options(warn=0)
-  tol = .Machine$double.eps ^ 0.5
-  if ( nlevels(blkDesign[,ncol(blkDesign)])>1) {
-  regreps=table(TF)
-  regReps=isTRUE(max(regreps)==min(regreps))
-  ntrts=nlevels(TF)
-  #main blocks
-  regblocks=table(TF,blkDesign[,2]) 
-  regBlocks=isTRUE(max(regblocks)==min(regblocks))
+  trtreps=as.matrix(table(TF))[,1]
+  regReps=isTRUE(diff(range(trtreps))<tol)
+  # the Base block is a single super-block and is the null 'restriction' factor for the first set of BF blocks 
+  BF=cbind("Base" = factor(rep(1,nrow(BF))),BF)
+  # orthogonality test for proportional treatment representation in each block
+  orthBlocks = sapply(1:ncol(BF),function(i) {isTRUE(diff(range(scale(table(TF,BF[,i])/trtreps, center=TRUE,scale=FALSE)))<tol)})
+  orthblocks=sum(orthBlocks)
+  # fully randomized in bottom level of orthogonal blocks
+  TF= unlist(lapply(1:nlevels(BF[,orthblocks]), function(j) {sample(TF[BF[,orthblocks]==levels(BF[,orthblocks])[j]])}))
   
-  if (regReps) nreps=length(TF)/ntrts else nreps=NA
-  if (ncol(blkDesign)>2)
-    b=nlevels(blkDesign[,3]) else 
-      b=nlevels(blkDesign[,2])
-  
-  k=length(TF)/b
-  sk=sqrt(ntrts)  # size of blocks of a square lattice 
-  rk=(sqrt(1+4*ntrts)-1)/2 #  size of blocks of a rectangular lattice
-  ## necessary conditions for lattice designs 
-  Lattice=isTRUE(regBlocks && regReps && sk%%1==0 && k==sk && nreps<(sk+2) )
-  ## necessary conditions for rectangular lattice designs 
-  rectLattice=isTRUE(regBlocks && regReps && rk%%1==0 && k==rk && nreps<(rk+2))
-  if (Lattice) TL=squarelattice(sk,nreps) else if (rectLattice) TL=rectlattice(rk+1,nreps) else TL=NULL
-  
-  if (ncol(blkDesign)>3 & !is.null(TL)) {
-    TF=TL
-    for (i in 4:ncol(blkDesign)) {
-      Opt=blocksOpt(TF,blkDesign[,(i-1)],blkDesign[,i],regReps)
-      TF=Opt$TF
-      TM=Opt$TM
-      if (is.null(TM)) stop("Unable to find a non-singular solution for this design - try a simpler design")
+  if(orthblocks<ncol(BF)) { 
+    for (i in (orthblocks+1):ncol(BF)) {
+      if (isTRUE(diff(range(table(BF[,i])))<tol) & regReps) {
+        b=nlevels(BF[,i]) # number of incomplete blocks
+        k=length(TF)/b # block size of incomplete blocks
+        sk=sqrt(nlevels(TF))  # required block size for a square lattice 
+        rk=(sqrt(1+4*nlevels(TF))-1)/2 #  required block size for a rectangular lattice
+        ## necessary conditions for square or rectangular lattice designs 
+        if (sk%%1==0 & k==sk & trtreps[1]<(sk+2) ) {
+          TL=squarelattice(sk,trtreps[1]) 
+        } else if (rk%%1==0 & k==rk & trtreps[1]<(rk+2)) { 
+          TL=rectlattice(rk+1,trtreps[1]) 
+        } else TL=NULL
+      } else TL=NULL
+      if (is.null(TL)) TF=blocksOpt(TF,BF[,(i-1)],BF[,i],regReps) else
+        TF=TL 
     }
-  } else if (!is.null(TL)) TF=TL else {
-    for (z in 1 :100) {
-      for (i in 2:ncol(blkDesign)) {
-        Opt=blocksOpt(TF,blkDesign[,(i-1)],blkDesign[,i],regReps)
-        TF=Opt$TF
-        TM=Opt$TM
-        if (is.null(TM)) break
-      }
-      if (!is.null(TM)) break
-    }
-    if (is.null(TM)) stop("Unable to find a non-singular solution for this design - try a simpler design")
-  }
   }
   
-  Design=data.frame(blkDesign,plots=factor(1:length(TF)),treatments=TF)[,-1,drop=FALSE]
+  Design=data.frame(BF,plots=factor(1:length(TF)),treatments=TF)[,-1,drop=FALSE]
   Efficiencies=BlockEfficiencies(Design)
-  blocksizes=table(blkDesign[,ncol(blkDesign)])
-  blkdesign=unique(blkDesign[,-1 ,drop=FALSE])
+  blocksizes=table(BF[,ncol(BF)])
+  BF=unique(BF[,-1 ,drop=FALSE])
   V = split( Design[,ncol(Design)], Design[,(ncol(Design)-2)],lex.order = TRUE) 
   V = lapply(V, function(x){ length(x) =max(blocksizes); x })
-  Plan = data.frame(blkdesign,rep("",length(V)),matrix(unlist(V),nrow=length(V),byrow=TRUE))
-  colnames(Plan)=c(colnames(blkdesign),"Blocks.Plots:", c(1:max(blocksizes)))
+  Plan = data.frame(BF,rep("",length(V)),matrix(unlist(V),nrow=length(V),byrow=TRUE))
+  colnames(Plan)=c(colnames(BF),"Blocks.Plots:", c(1:max(blocksizes)))
   row.names(Plan)=NULL
   row.names(Design)=NULL
   row.names(Efficiencies)=NULL
-  Treatments=count(Design[,ncol(Design),drop=FALSE])
-  list(Treatments=Treatments,Blocks_model=Efficiencies,Design=Design,Plan=Plan)
+  list(Blocks_model=Efficiencies,Design=Design,Plan=Plan)
 }
+

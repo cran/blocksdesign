@@ -52,8 +52,7 @@
 #' 
 #' Cochran W. G. & Cox G. M. (1957) Experimental Designs 2nd Edition John Wiley & Sons.
 #' 
-#' Edmondson, R.N. Multi-level Block Designs for Comparative Experiments. JABES (2020). 
-#' \url{https://doi.org/10.1007/s13253-020-00416-0}
+#' Edmondson, R.N. Multi-level Block Designs for Comparative Experiments. JABES 25, 500–522 (2020).
 #' 
 NULL
 

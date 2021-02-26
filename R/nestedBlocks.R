@@ -218,6 +218,7 @@ nestedBlocks=function(TF,BF,searches,seed,jumps) {
   # The model.matrix assumes treatment type contrasts and the options setting for this function is treatment contrasts.
   # *****************************************************************************************************************
   blocksOpt=function(TF,MF,BF,regReps) {
+   
     exclude=sapply(1:nlevels(MF),function(i) {(which(table(MF,BF)[i,]>0))[1]})# the level of the first nested block in each main block 
     include=(1:nlevels(BF))[!(1:nlevels(BF))%in%exclude] # nested blocks omitting first block in each main block)
     # center treatment effects and nested block effects within main blocks so that treatments are optimized within nested blocks 
@@ -252,7 +253,7 @@ nestedBlocks=function(TF,BF,searches,seed,jumps) {
   orthblocks=sum(orthBlocks)
   # fully randomized in bottom level of orthogonal blocks
   TF= unlist(lapply(1:nlevels(BF[,orthblocks]), function(j) {sample(TF[BF[,orthblocks]==levels(BF[,orthblocks])[j]])}))
-  
+
   if(orthblocks<ncol(BF)) { 
     for (i in (orthblocks+1):ncol(BF)) {
       if (isTRUE(diff(range(table(BF[,i])))<tol) & regReps) {

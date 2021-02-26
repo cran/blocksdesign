@@ -85,6 +85,7 @@
 #' 
 #' @export
 #' @importFrom stats coef anova lm model.matrix as.formula setNames 
+#' @importFrom plyr count
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
    
@@ -147,6 +148,6 @@
   hcf=HCF(replicates) 
   TF=data.frame(Treatments=factor(unlist(lapply(1:hcf,function(i){sample(rep(1:sum(treatments),rep(replicates/hcf,treatments)))}))))
   Z=nestedBlocks(TF[,1],blkDesign,searches,seed,jumps)
-  list(Replication=data.frame(table(Treatments=TF)),Blocks_model=Z$Blocks_model,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
+  list(Replication=count(TF),Blocks_model=Z$Blocks_model,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
  }
  

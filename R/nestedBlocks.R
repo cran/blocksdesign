@@ -244,6 +244,7 @@ nestedBlocks=function(TF,BF,searches,seed,jumps) {
   # *****************************************************************************************************************
   # nestedBlocks - valid for nested block designs ONLY
   # *****************************************************************************************************************
+  TF=TF[,1]
   trtreps=as.matrix(table(TF))[,1]
   regReps=isTRUE(diff(range(trtreps))<tol)
   # the Base block is a single super-block and is the null 'restriction' factor for the first set of BF blocks 
@@ -284,6 +285,6 @@ nestedBlocks=function(TF,BF,searches,seed,jumps) {
   row.names(Plan)=NULL
   row.names(Design)=NULL
   row.names(Efficiencies)=NULL
-  list(Blocks_model=Efficiencies,Design=Design,Plan=Plan)
+  list(Effic=Efficiencies,Design=Design,Plan=Plan)
 }
 

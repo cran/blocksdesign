@@ -15,11 +15,9 @@ design(
 )
 }
 \arguments{
-\item{treatments}{a single treatment factor or data frame for the candidate set of treatment factor
-combinations assuming any combination of qualitative or quantitative factor levels.}
+\item{treatments}{a candidate set of treatments for any combination of qualitative or quantitative level factors.}
 
-\item{blocks}{a single block factor or data frame for the required combinations of block factors in
-the required order of fitting assuming quantitative block factor levels only.}
+\item{blocks}{a data frame of block factors.}
 
 \item{treatments_model}{a list containing one or more nested treatment model formula.}
 
@@ -47,21 +45,29 @@ in standardized block order.}
 \item{jumps}{Number of random treatment swaps to escape a local maxima.}
 }
 \description{
-Constructs general D-optimal block and treatment designs for any feasible linear treatment model and
+Constructs D-optimal block and treatment designs for any feasible linear treatment model and
 any feasible combination of block factors.
 }
 \details{
-\code{treatments} a factor or data frame containing one or more qualitative or quantitative
-level treatment factors defining a candidate set of treatments. The required treatment design 
-is selected from the candidate treatment set without replacement. The number of times a treatment 
-can be selected depends on the number of replications of the candidate set and increasing the 
-number of multiples of the candidate set allows increased replication for individual treatments. 
+\code{treatments} a factor or data frame or list of generators for the candidate set of treatments. 
+The candidate treatment set can include both quantitative and qualitative level factors and the required design 
+is selected from the candidate treatment set without replacement. The number of times 
+a treatment can be included in a design depends on the replication of that treatment in the candidate set therefore
+increasing the treatment replication in the candidate set allows increased replication for individual treatments. 
+
+\code{blocks} a data frame of nested or crossed block factors. The length of the block factors defines the 
+required size of the treatment design. the treatment design is optimized for the required blocks design by maximising
+the determinant of the block-adjusted treatment information matrix (D-optimality. For crossed block designs,
+the information matrix is based on a weighted combination of block main effects and two-factor interaction effects
+where the information on the interaction effects is down-weighted by a coefficient 0 < w < 1 where w = 0 
+gives blocks main effects only whereas w = 1 gives the full two-factor blocks interaction model.
+This process ensures that factorial main effects can be given more importance than the interaction effects
+ in the optimization of a crossed blocks design. 
 
 \code{treatments_model} a character vector containing one or more treatments model formula. The 
-treatment models are optimized sequentially for each model formula in turn assuming the treatments for
-any previously fitted models are held constant. Sequential model fitting provides improved flexibility 
-for fitting treatment factors or variables of different status or importance (see examples below).
-
+treatment models are optimized sequentially for each model formula in turn assuming the treatments of
+any previously fitted models are held constant. Sequential fitting provides improved flexibility 
+for fitting treatment factors or variables of different status or importance (see examples below). 
 The design criterion for each treatment model is maximization of the determinant of the information 
 matrix of that treatment model conditional on the the information matrices of all previously 
 fitted treatment models.
@@ -69,19 +75,6 @@ fitted treatment models.
 The D-optimal treatment design efficiency is the ratio of the generalized variance of the full 
 candidate treatment model relative to the generalized variance of the optimized design. The efficiency
 will be less than or equal to 1 for factorial models but may exceed 1 for polynomial models. 
-
-\code{blocks} a factor or data frame containing one or more qualitative level block factors in
-order of fitting. If blocks are nested or crossed and fully additive, designs are optimized 
-by making improving swaps between the blocks of each added factor, taken in order, with the 
-blocks of all previously added block factors held constant. 
-
-If crossed blocks are assumed to interact, the \code{blocksdesign} algorithm first partitions 
-the block design information matrix into factorial components and then down-weights the
-block interaction components by a coefficient 0 < w < 1. The determinant of the weighted
-information matrix is then optimized in the usual way. This process ensures that factorial main effects
-are given more importance than interaction effects in the optimization of a crossed blocks design. 
-
-The length of the \code{blocks} object defines the total number of plots in the design.
 
 The design outputs include a table of efficiency factors for first and second-order factorial block 
 effects and comparison of the efficiency factors for different choices of w can be used to find a 
@@ -147,7 +140,7 @@ print(Z)
 ## The default weighting gives non-estimable Reps:Cols effects due to inherent aliasing
 ## Increased weighting gives estimable Reps:Cols effects but non-orthogonal main effects
 \donttest{
-blocks = data.frame(Reps = gl(2,48), Cols = gl(2,24,96))
+blocks = data.frame(Rows = gl(2,48), Cols = gl(2,24,96))
 Z1=design(treatments=gl(48,1,96),blocks,searches=5)
 print(Z1)
 Z2=design(treatments=gl(48,1,96),blocks,searches=5,weighting=.9)
@@ -215,46 +208,31 @@ print(Z)
 
 # Quadratic regression for three 3-level numeric factor assuming a 10/27 fraction
 treatments = list(A = 1:3, B = 1:3, C = 1:3)
-blocks=data.frame(main=gl(1,10))
+blocks=factor(rep(1,10))
 model = ~ ( A + B + C)^2 + I(A^2) + I(B^2) + I(C^2)
 Z=design(treatments,blocks,treatments_model=model,searches=10) 
 print(Z)
 
-## Plackett and Burman (P&B) type design for eleven 2-level factors in 12 runs 
-## NB. The algorithmic method is unlikely to succeed for larger P&B type designs. 
-\donttest{
-GF = list(F1 = factor(1:2,labels=c("a","b")), F2 = factor(1:2,labels=c("a","b")), 
-                 F3 = factor(1:2,labels=c("a","b")), F4 = factor(1:2,labels=c("a","b")),
-                 F5 = factor(1:2,labels=c("a","b")), F6 = factor(1:2,labels=c("a","b")),
-                 F7 = factor(1:2,labels=c("a","b")), F8 = factor(1:2,labels=c("a","b")), 
-                 F9 = factor(1:2,labels=c("a","b")), F10= factor(1:2,labels=c("a","b")), 
-                 F11= factor(1:2,labels=c("a","b")) )
-blocks=data.frame(main=gl(1,12))
-model = ~ F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9 + F10 + F11
-Z=design(GF,blocks,treatments_model=model,searches=25)
-print(Z)
-round(crossprod(scale(data.matrix(Z$Design)[,-1])),6) 
-}
 ## response surface designs with doubled treatment candidate sets 
 ## allowing duplicated design points
 
 ## two treatment factor design showing double replication on the 
 ## four corner points and double replication on the centre point
 treatments = list( V1 = 1:3, V2 = rep(1:3,2))
-blocks = data.frame(main = gl(1,14))
+blocks=factor(rep(1,14))
 model =  ~ (V1 + V2)^2 + I(V1^2) + I(V2^2)
 design(treatments,blocks,treatments_model=model,searches=10)
 
 ## three treatment factor design with eight corner points, 12 edge points and 1 centre 
 ## point. All 21 design points are accounted for leaving nothing for extra replication.
 treatments = list( V1 = 1:3, V2 = 1:3, V3 = rep(1:3,2))
-blocks = data.frame(main = gl(1,21))
+blocks=factor(rep(1,21))
 model =  ~ (V1 + V2 + V3)^2 + I(V1^2) + I(V2^2) + I(V3^2)
 design(treatments,blocks,treatments_model=model,searches=20)
 
 ## as above but with extra replication on each corner point and on the centre point
 treatments = list( V1 = 1:3, V2 = 1:3, V3 = rep(1:3,2))
-blocks = data.frame(main = gl(1,30))
+blocks=factor(rep(1,30))
 model =  ~ (V1 + V2 + V3)^2 + I(V1^2) + I(V2^2) + I(V3^2)
 design(treatments,blocks,treatments_model=model,searches=20)
 
@@ -264,7 +242,8 @@ design(treatments,blocks,treatments_model=model,searches=20)
 ## interaction effects and two blocks of 12 plots
 ## the single stage model gives an unequal split for the replication of the four varieties
 ## which may be undesirable whereas the two stage model forces an equal split of 6 plots
-## per variety. The single stage model appears slightly more efficient but
+## per variety. The single stage model is slightly more efficient than the two stage model
+## (1.052045 versus 0.9761135 standardized relative to the full factorial design)  but
 ## in this example global D-optimality does not give the most suitable design structure. 
 \donttest{
 treatments = list(Variety = factor(1:4), N = 1:3, K = 1:3)

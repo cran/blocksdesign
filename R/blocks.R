@@ -88,28 +88,30 @@
 #' @importFrom plyr count
 #'
  blocks = function(treatments,replicates,blocks=NULL,searches=NULL,seed=NULL,jumps=1) {
+   options(contrasts=c('contr.treatment','contr.poly'))
+   options(warn=0)
+   tol = .Machine$double.eps ^ 0.5
    
+   # ***********************************************************************************************
+   # finds n sub-blocks nested within one main block where all sub-block sizes are as equal as possible
+   # *********************************************************************************************** 
+     subB=function(mainSize,n) {
+       subBlocks=rep(mainSize%/%n,n) 
+       if (mainSize%%n>0) subBlocks[1:(mainSize%%n)]=subBlocks[1:(mainSize%%n)]+1
+       return(subBlocks)
+     }
+     
   # ***********************************************************************************************
   #  finds a set of equal or near-equal sub-blocks nested within a set of main blocks
   # each sub-set must contain the same number b of sub-blocks 
-  # sub-blocks which will never differ by more than a single plot in size
+  # sub-blocks will never differ by more than a single plot in size
   # *********************************************************************************************** 
-   nestedSizes=function(blocks,b) {
-     subB=function(k) c(rep((floor(k/b)+1),(k-b*floor(k/b))),rep(floor(k/b),(b+b*floor(k/b)-k)))
-     k1=min(blocks)
-     k2=max(blocks)
-     sub1=subB(k1)
-     sub2=subB(k2)
-     subM=matrix(nrow=b,ncol=length(blocks))
-     subM[,blocks==k1]=sub1
-     subM[,blocks==k2]=sub2
-     subB=as.vector(subM)
-     return(subB)
-   }
+     nestedSizes=function(mainBlocks,b) {
+       subBlocks=unlist(lapply(1:length(mainBlocks), function(j) {subB(mainBlocks[j],b)}))
+       return(subBlocks)
+     }
   # ***********************************************************************************************  
-  options(contrasts=c('contr.treatment','contr.poly'))
-  options(warn=0)
-  tol = .Machine$double.eps ^ 0.5
+    
   if (is.list(treatments)) treatments=unlist(treatments)
   if (is.list(blocks)) blocks=unlist(blocks)
   if (is.list(replicates)) replicates=unlist(replicates)
@@ -139,15 +141,17 @@
   # Finds nested block sizes where all block sizes are as equal as possible within each level of nesting
   blocksizes=nplots
   for (i in 1:length(blocks))
-    blocksizes=nestedSizes(blocksizes,blocks[i])
+    blocksizes=nestedSizes(blocksizes,as.numeric(blocks[i]))
   blocksGrid=function(blocks){expand.grid(lapply(length(blocks):1,function(i) {
     factor(seq(blocks[i]),labels=lapply(1:blocks[i], function(j){paste0("B",j)}))}))[length(blocks):1]}
   blkDesign=blocksGrid(blocks)[rep(1:length(blocksizes),blocksizes),,drop=FALSE]
+
   blkDesign=data.frame(lapply(1:ncol(blkDesign),function(i) { droplevels(interaction(blkDesign[,1:i], lex.order = TRUE))}))
   colnames(blkDesign)=labels(blocks)
+ 
   hcf=HCF(replicates) 
   TF=data.frame(Treatments=factor(unlist(lapply(1:hcf,function(i){sample(rep(1:sum(treatments),rep(replicates/hcf,treatments)))}))))
-  Z=nestedBlocks(TF[,1],blkDesign,searches,seed,jumps)
-  list(Replication=count(TF),Blocks_model=Z$Blocks_model,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
+  Z=nestedBlocks(TF[,1,drop=FALSE],blkDesign,searches,seed,jumps) # nestedBlocks function optimizes the blocks design
+  list(Replication=count(TF),Blocks_model=Z$Effic,Design=Z$Design,Plan=Z$Plan,seed=seed,searches=searches,jumps=jumps)
  }
  
